@@ -19,7 +19,7 @@ export default function Home() {
           <article>
             <span>Frontend</span>
             <strong>Next.js</strong>
-            <p>Sem Tailwind ou Bootstrap por padrao.</p>
+            <p>Sem Bootstrap por padrao.</p>
           </article>
           <article>
             <span>Backend</span>
