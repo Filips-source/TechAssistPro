@@ -5,6 +5,8 @@ import express from "express";
 import helmet from "helmet";
 
 import { clientesRoutes } from "./routes/clientesRoutes.js";
+import healthRoutes from "./routes/healthRoutes.js";
+import { errorHandler } from "./middlewares/errorHandler.js";
 
 const app = express();
 
@@ -25,5 +27,9 @@ app.get("/", (request, response) => {
 });
 
 app.use("/api/clientes", clientesRoutes);
+
+app.use("/api/health", healthRoutes);
+
+app.use(errorHandler);
 
 export default app;
