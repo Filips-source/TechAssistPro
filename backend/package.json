@@ -1,19 +1,29 @@
 {
-  "name": "backend",
+  "name": "techassistpro-api",
   "version": "1.0.0",
-  "private": true,
-  "type": "module",
+  "description": "",
+  "main": "app.js",
   "scripts": {
-    "dev": "node --watch src/server.js",
-    "start": "node src/server.js"
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "chave": "node -e \"console.log(require('crypto').randomBytes(48).toString('hex'))\"",
+    "criar-admin": "node scripts/criar-admin.js",
+    "criar-desenvolvedor": "node scripts/criar-desenvolvedor.js",
+    "check": "node --check app.js",
+    "test:integracao": "node --test test/integracao.test.js"
   },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "private": true,
   "dependencies": {
-    "bcrypt": "^6.0.0",
-    "cors": "^2.8.5",
-    "dotenv": "^17.4.2",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
     "express": "^5.2.1",
-    "helmet": "^8.1.0",
+    "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
-    "mysql2": "^3.24.6"
+    "multer": "^2.4.0",
+    "mysql2": "^3.24.4"
   }
 }

@@ -1,0 +1,11 @@
+import { Router } from "express";
+import * as C from "../controllers/OrdemController.js";
+import { autenticar, autorizarEquipe } from "../middlewares/AuthMiddleware.js";
+export const ordemRouter = Router();
+ordemRouter.use(autenticar);
+ordemRouter.get("/", C.listar);
+ordemRouter.get("/:id", C.buscar);
+ordemRouter.post("/", autorizarEquipe, C.criar);
+ordemRouter.patch("/:id", autorizarEquipe, C.atualizar);
+ordemRouter.post("/:id/orcamento", autorizarEquipe, C.orcar);
+ordemRouter.post("/:id/decisao", C.decidir);

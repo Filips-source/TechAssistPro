@@ -1,0 +1,27 @@
+.termos-page { min-height: 100vh; color: var(--ink); background: radial-gradient(circle at top right, rgba(241,93,81,.10), transparent 34%), var(--paper); }
+.termos-container { width: min(900px, calc(100% - 48px)); margin: 0 auto; }
+.termos-header { position: relative; background: #101419; border-bottom: 1px solid var(--line); }
+.termos-header-inner { min-height: 78px; display: flex; justify-content: space-between; align-items: center; gap: 20px; }
+.termos-brand { color: #fff; font-size: 21px; font-weight: 800; letter-spacing: -1px; }
+.termos-brand strong { font-size: 12px; color: var(--red); letter-spacing: .1px; }
+.termos-return { font-size: 12px; font-weight: 700; color: #c8d0da; }
+.termos-return:hover, .termos-footer a:hover { color: var(--red); }
+.termos-content { padding: 62px 0 90px; }
+.termos-intro { padding-bottom: 35px; margin-bottom: 33px; border-bottom: 1px solid var(--line); }
+.termos-kicker { display: block; font-size: 10px; letter-spacing: 1.6px; font-weight: 800; color: var(--red); margin-bottom: 18px; }
+.termos-intro h1 { font-size: clamp(31px, 5vw, 49px); line-height: 1.16; letter-spacing: -1.5px; }
+.termos-intro em { color: var(--red); }
+.termos-updated { font-size: 12px; margin-top: 16px; }
+.termos-page section { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 30px 32px; margin-bottom: 16px; }
+.termos-page section h2 { font-size: 19px; letter-spacing: -.5px; margin: 0 0 14px; color: #f5f6f9; }
+.termos-page section h3 { font-size: 14px; letter-spacing: 0; margin: 24px 0 10px; }
+.termos-page section p, .termos-page section li { font-size: 13px; line-height: 1.85; color: #b7c0cd; }
+.termos-page section p + p { margin-top: 12px; }
+.termos-page section ul { padding-left: 24px; margin: 10px 0 0; }
+.termos-page section li { padding: 3px 0; }
+.termos-page section li::marker { color: var(--red); }
+.termos-page section strong { color: #e3e8ef; }
+.termos-footer { display: flex; justify-content: space-between; align-items: center; gap: 20px; padding: 31px 0 0; font-size: 11px; }
+.termos-footer p { font-size: 11px; }
+.termos-footer a { color: #e0e8f0; font-weight: 700; }
+@media (max-width: 560px) { .termos-container { width: min(900px, calc(100% - 30px)); } .termos-content { padding: 38px 0 65px; } .termos-page section { padding: 24px 18px; } .termos-footer { align-items: flex-start; flex-direction: column; } }

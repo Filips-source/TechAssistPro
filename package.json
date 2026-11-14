@@ -1,0 +1,1 @@
+{"name":"techassistpro-entrega2","version":"1.0.0","private":true,"scripts":{"configurar":"node scripts/configurar.mjs","backend":"npm --prefix backend run dev","frontend":"npm --prefix frontend run dev"},"engines":{"node":">=22"}}

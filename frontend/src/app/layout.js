@@ -1,10 +1,9 @@
 import "./globals.css";
-
 export const metadata = {
-  title: "Projeto Base",
-  description: "Template base com Next.js, Express e MySQL",
+  title: "TechAssist Pro",
+  description:
+    "Gestão de assistência técnica, contato, orçamento e acompanhamento de reparos.",
 };
-
 export default function RootLayout({ children }) {
   return (
     <html lang="pt-BR">
