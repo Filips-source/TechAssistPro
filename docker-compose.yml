@@ -24,7 +24,7 @@ services:
       DB_NAME: techassistpro
       DB_USER: techassist
       DB_PASS: ${MYSQL_PASSWORD}
-      CORS_ORIGENS: http://localhost:3000
+      CORS_ORIGENS: "http://techassistpro.10.189.87.231.sslip.io"
     ports:
       - "127.0.0.1:3001:3001"
     volumes:
