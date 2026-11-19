@@ -6,6 +6,7 @@ import helmet from "helmet";
 import cors from "cors";
 import { pool } from "./config/database.js";
 import { authRouter } from "./routes/AuthRoutes.js";
+import { gestaoUsuariosRouter } from "./routes/GestaoUsuariosRoutes.js";
 import { contatoRouter } from "./routes/ContatoRoutes.js";
 import { suporteRouter } from "./routes/SuporteRoutes.js";
 import { ordemRouter } from "./routes/OrdemRoutes.js";
@@ -42,6 +43,7 @@ app.get("/api/check", async (_req, res, next) => {
 // As fotos públicas são gravadas na pasta uploads, fora de node_modules.
 app.use("/api/uploads/perfis", express.static(join(dirname(fileURLToPath(import.meta.url)), "uploads", "perfis"), { index: false, fallthrough: false, maxAge: "1d" }));
 app.use("/api/auth", authRouter);
+app.use("/api/gestao-usuarios", gestaoUsuariosRouter);
 app.use("/api/contatos", contatoRouter);
 app.use("/api/suporte", suporteRouter);
 app.use("/api/ordens", ordemRouter);
