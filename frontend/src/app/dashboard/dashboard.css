@@ -370,3 +370,41 @@
 .support-contact-bottom a:hover { text-decoration:underline; }
 @media(max-width:850px) { .support-contact-grid { grid-template-columns:1fr; } }
 @media(max-width:510px) { .support-tabs { overflow-x:auto; }.support-tabs button { white-space:nowrap; padding:10px; font-size:11.5px; }.support-contact-panel { padding:15px; }.support-contact-head { align-items:flex-start; }.support-contact-card { padding:15px; } }
+
+
+/* Gestão de usuários — extensão do modal existente, sem alterar o layout da dashboard */
+.ad-users-heading { gap:16px; }
+.ad-users-actions { display:flex; gap:9px; flex-wrap:wrap; justify-content:flex-end; }
+.ad-users-modal { width:min(740px,100%); max-height:min(90vh,850px); overflow-y:auto; }
+.ad-users-subtitle { color:#b9c4d1; font-size:12px; margin-top:5px!important; }
+.ad-users-tabs { display:flex; border:1px solid var(--line); border-radius:10px; padding:4px; gap:5px; margin-bottom:17px; }
+.ad-users-tabs button { flex:1; color:#cbd2df; border:0; background:transparent; padding:10px; border-radius:7px; font-weight:700; }
+.ad-users-tabs button.active { background:#29313b; color:#fff; }
+.ad-users-toolbar { display:flex; align-items:center; gap:10px; margin-bottom:15px; }
+.ad-users-toolbar input { flex:1; min-width:0; background:var(--panel-strong); border:1px solid var(--line); border-radius:9px; color:var(--ink); padding:12px; }
+.ad-users-list { display:flex; flex-direction:column; gap:9px; max-height:48vh; overflow:auto; }
+.ad-users-item { display:flex; align-items:center; justify-content:space-between; padding:14px; border:1px solid var(--line); border-radius:10px; gap:12px; }
+.ad-users-item strong,.ad-users-item small { display:block; overflow-wrap:anywhere; }
+.ad-users-item strong { font-size:13px; color:var(--ink); }
+.ad-users-item small { font-size:11px; margin-top:4px; color:#b9c4d1; }
+.ad-users-item-actions { display:flex; gap:7px; flex-wrap:wrap; }
+.ad-users-status-btn { border:1px solid #d5675d66; background:#ef5d5116; color:#ff9b92; padding:9px 11px; border-radius:8px; font-size:12px; }
+.ad-users-empty { padding:22px 12px; color:#b9c4d1; text-align:center; }
+.ad-users-error { color:#ffd4d1; background:#a130302a; border:1px solid #a1303069; padding:11px 13px; border-radius:9px; margin:10px 0; font-size:12px; }
+.ad-users-success { color:#d3fbe5; background:#226b4d38; border:1px solid #226b4d77; padding:10px 13px; border-radius:9px; margin-bottom:16px; }
+.ad-users-password-section { display:flex; flex-direction:column; gap:9px; border:1px solid var(--line); padding:16px; border-radius:10px; }
+.ad-users-password-section > strong { color:var(--ink); font-size:13px; }
+.ad-users-password-section .ad-secondary-btn { align-self:flex-start; }
+.ad-users-password { display:flex; align-items:stretch; position:relative; }
+.ad-users-password input { padding-right:48px; }
+.ad-users-password button { position:absolute; right:3px; top:3px; bottom:3px; width:40px; background:transparent; border:0; color:#c4cfda; display:grid; place-items:center; }
+.ad-users-password button:hover { color:#fff; }
+.ad-users-modal button:disabled { opacity:.6; cursor:not-allowed; }
+@media(max-width:600px) {
+  .ad-users-actions,.ad-users-toolbar { width:100%; }
+  .ad-users-actions button { flex:1; }
+  .ad-users-toolbar { flex-wrap:wrap; }
+  .ad-users-toolbar input { flex-basis:100%; }
+  .ad-users-item { flex-direction:column; align-items:flex-start; }
+  .ad-users-item-actions { width:100%; }
+}
