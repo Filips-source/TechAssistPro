@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import SupportChat from "./SupportChat";
+import GestaoUsuarios from "./GestaoUsuarios";
 import { useMemo, useState } from "react";
 import { MENU, NOMES_PERFIS, menuDoPerfil, pode } from "../../lib/auren/permissoes";
 
@@ -98,7 +99,6 @@ export default function AurenDashboard({ usuario, dados, secao, demonstracao, on
   const podeCriarOrdem = pode(papel, "manutencoes:proprias:criar");
   const podeEditarOrdem = pode(papel, "manutencoes:atribuidas:atualizar") || pode(papel, "manutencoes:todas:atualizar");
   const podeAtribuir = pode(papel, "manutencoes:atribuir");
-  const podeCriarFuncionario = pode(papel, "funcionarios:criar");
   const podeAtualizarMetricas = pode(papel, "metricas:atribuidas:atualizar") || pode(papel, "metricas:todas:atualizar");
   const navegacao = useMemo(() => menuDoPerfil(papel), [papel]);
   const equipamentoLeitura = equipamentos.find((item) => item.id === equipamentoLeituraId);
@@ -174,21 +174,6 @@ export default function AurenDashboard({ usuario, dados, secao, demonstracao, on
     });
   }
 
-  function criarFuncionario(evento) {
-    evento.preventDefault();
-    if (!podeCriarFuncionario) return;
-    const valores = new FormData(evento.currentTarget);
-    const nome = String(valores.get("nome") ?? "").trim();
-    const email = String(valores.get("email") ?? "").trim();
-    const funcao = String(valores.get("funcao") ?? "").trim();
-    if (!nome || !email || !funcao) return;
-    executarDemo(() => {
-      const id = Math.max(20, ...funcionarios.map((item) => item.id)) + 1;
-      setFuncionarios((pessoas) => [...pessoas, { id, nome, email, funcao, ativo: true, servicos: 0 }]);
-      setModal(null);
-      setFeedback("Funcionário adicionado somente à demonstração, sem criar conta real.");
-    });
-  }
 
   const cards = papel === "cliente" ? [
     ["Meus equipamentos", equipamentos.length, "cpu", "Cadastrados na TechAssist"],
@@ -226,7 +211,7 @@ export default function AurenDashboard({ usuario, dados, secao, demonstracao, on
   } else if (secao === "agenda") {
     conteudo = <><SecaoTitulo titulo="Agenda e histórico" subtitulo="Próximos atendimentos e serviços já realizados"/><div className="ad-agenda-grid"><section className="ad-panel"><h3>Próximos serviços</h3><div className="ad-timeline">{ordens.filter((item) => item.status !== "Concluída").map((ordem) => <div className="ad-time-entry" key={ordem.id}><span className="ad-time-dot"/><div><small>{ordem.data} · {ordem.codigo}</small><strong>{ordem.titulo}</strong><span>{ordem.tecnico || "A definir"}</span></div><ClasseStatus valor={ordem.status}/></div>)}{!pendentes && <Vazio mensagem="Sem serviços agendados."/>}</div></section><section className="ad-panel"><h3>Histórico concluído</h3><div className="ad-timeline">{ordens.filter((item) => item.status === "Concluída").map((ordem) => <div className="ad-time-entry" key={ordem.id}><span className="ad-time-dot is-done"/><div><small>{ordem.data} · {ordem.codigo}</small><strong>{ordem.titulo}</strong><span>{ordem.tipo}</span></div><Icon nome="check" tamanho={20}/></div>)}{!ordens.some((item) => item.status === "Concluída") && <Vazio mensagem="Nenhuma manutenção concluída neste período."/>}</div></section></div></>;
   } else if (secao === "funcionarios") {
-    conteudo = <><SecaoTitulo titulo="Gestão de funcionários" subtitulo="Cadastre técnicos, consulte responsabilidades e organize a equipe" acao={<button className="ad-primary-btn" onClick={() => setModal("novo-funcionario")}><Icon nome="plus" tamanho={18}/> Cadastrar funcionário</button>}/><section className="ad-panel ad-table-panel"><div className="ad-table-wrap"><table className="ad-table"><thead><tr><th>Funcionário</th><th>Função</th><th>Status</th><th>Serviços</th><th>Ação</th></tr></thead><tbody>{funcionarios.map((pessoa) => <tr key={pessoa.id}><td><strong>{pessoa.nome}</strong><small>{pessoa.email}</small></td><td>{pessoa.funcao}</td><td><ClasseStatus valor={pessoa.ativo ? "Ativo" : "Inativo"}/></td><td>{pessoa.servicos}</td><td><button type="button" className="ad-text-btn" onClick={() => executarDemo(() => {setFuncionarios((lista) => lista.map((item) => item.id === pessoa.id ? {...item, ativo: !item.ativo} : item)); setFeedback(`Status de ${pessoa.nome} alterado apenas na demonstração.`);})}>{pessoa.ativo ? "Desativar" : "Reativar"}</button></td></tr>)}</tbody></table></div></section></>;
+    conteudo = <GestaoUsuarios demonstracao={demonstracao} dadosIniciais={funcionarios}/>;
   } else if (secao === "relatorios") {
     conteudo = <><SecaoTitulo titulo="Relatórios operacionais" subtitulo="Indicadores para tomada de decisão e planejamento preventivo"/><div className="ad-kpi-grid ad-report-kpis">{cards.map(([rotulo, valor, icone, detalhe]) => <article key={rotulo} className="ad-kpi"><div className="ad-kpi-top"><span>{rotulo}</span><span className="ad-kpi-icon"><Icon nome={icone} tamanho={18}/></span></div><strong>{valor}</strong><small>{detalhe}</small></article>)}</div><section className="ad-panel ad-orders-section"><h3>Saúde dos equipamentos</h3><div className="ad-report-bars">{equipamentos.map((item) => <div className="ad-report-row" key={item.id}><span>{item.nome}</span>{Number.isFinite(item.saude) ? <><Nivel valor={item.saude}/><strong>{item.saude}%</strong></> : <><span className="ad-muted">Telemetria indisponível</span><strong>—</strong></>}</div>)}</div></section></>;
   } else if (secao === "auditoria") {
@@ -251,11 +236,10 @@ export default function AurenDashboard({ usuario, dados, secao, demonstracao, on
       <div className="ad-main-wrapper"><header className="ad-topbar"><div className="ad-top-left"><button type="button" className="ad-mobile-trigger" onClick={() => setMobileMenu(true)} aria-label="Abrir menu"><Icon nome="menu"/></button><div className="ad-breadcrumb"><span>Área de trabalho</span><Icon nome="chevron" tamanho={15}/><strong>{tituloSecao}</strong></div></div><div className="ad-top-right"><Link href="/" className="ad-site-link" aria-label="Voltar ao site principal"><Icon nome="arrow" tamanho={16}/><span>Voltar ao site</span></Link><span className="ad-role-tag">{NOMES_PERFIS[papel]}</span><span className="ad-top-separator"/><span className="ad-top-avatar">{inicial}</span>{onLogout && <button type="button" className="ad-logout-btn" onClick={onLogout}>Sair</button>}</div></header>
         <main className="ad-content">{demonstracao && <div className="ad-demo-banner"><span><Icon nome="settings" tamanho={16}/> Modo de demonstração — dados fictícios e ações locais.</span><label>Visualizar perfil <select value={papel} onChange={(evento) => window.location.assign(linkSecao("visao-geral", evento.target.value))}>{Object.keys(NOMES_PERFIS).map((perfil) => <option key={perfil} value={perfil}>{NOMES_PERFIS[perfil]}</option>)}</select></label></div>}{feedback && <div className="ad-feedback" role="status"><Icon nome="check" tamanho={17}/>{feedback}<button type="button" onClick={() => setFeedback("")} aria-label="Fechar aviso"><Icon nome="close" tamanho={16}/></button></div>}{secao !== "visao-geral" && <div className="ad-page-heading"><span className="ad-kicker">TECHASSIST / {tituloSecao.toUpperCase()}</span><h1>{tituloSecao}</h1></div>}{conteudo}<footer className="ad-footer"><span>© 2026 TechAssist Pro · Assistência técnica</span><span>Dashboard multiusuário</span></footer></main>
       </div>
-      {modal && <div className="ad-modal-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) setModal(null); }}><section className="ad-modal" role="dialog" aria-modal="true" aria-labelledby="ad-modal-title"><div className="ad-modal-header"><h2 id="ad-modal-title">{modal === "nova-solicitacao" ? "Nova solicitação de reparo" : modal === "novo-funcionario" ? "Cadastrar funcionário" : modal === "registrar-leitura" ? "Registrar leitura manual" : "Atualizar ordem de serviço"}</h2><button type="button" onClick={() => setModal(null)} aria-label="Fechar"><Icon nome="close"/></button></div>
+      {modal && <div className="ad-modal-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) setModal(null); }}><section className="ad-modal" role="dialog" aria-modal="true" aria-labelledby="ad-modal-title"><div className="ad-modal-header"><h2 id="ad-modal-title">{modal === "nova-solicitacao" ? "Nova solicitação de reparo" : modal === "registrar-leitura" ? "Registrar leitura manual" : "Atualizar ordem de serviço"}</h2><button type="button" onClick={() => setModal(null)} aria-label="Fechar"><Icon nome="close"/></button></div>
           {modal === "nova-solicitacao" && <form onSubmit={criarSolicitacao} className="ad-form"><label>Equipamento <select name="equipamentoId" required>{equipamentos.map((item) => <option key={item.id} value={item.id}>{item.codigo} · {item.nome}</option>)}</select></label><label>Descrição do problema <textarea name="titulo" required minLength={5} maxLength={180} placeholder="Descreva o sintoma ou serviço desejado" rows={3}/></label><div className="ad-form-two"><label>Prioridade <select name="prioridade"><option>Baixa</option><option>Média</option><option>Alta</option></select></label><label>Data preferida <input name="data" type="date" required/></label></div><div className="ad-form-footer"><button type="button" className="ad-secondary-btn" onClick={() => setModal(null)}>Cancelar</button><button type="submit" className="ad-primary-btn">Solicitar reparo</button></div></form>}
           {modal === "editar-ordem" && <form onSubmit={atualizarOrdem} className="ad-form"><p className="ad-muted">{ordemAtiva?.codigo} · {ordemAtiva?.titulo}</p><label>Etapa atual <select name="status" defaultValue={ordemAtiva?.status}><option>Pendente</option><option>Agendada</option><option>Em andamento</option><option>Concluída</option></select></label><div className="ad-form-footer"><button type="button" className="ad-secondary-btn" onClick={() => setModal(null)}>Cancelar</button><button type="submit" className="ad-primary-btn">Salvar atualização</button></div></form>}
           {modal === "registrar-leitura" && equipamentoLeitura && <form onSubmit={registrarLeitura} className="ad-form"><p className="ad-muted">{equipamentoLeitura.codigo} · {equipamentoLeitura.nome}</p><label>Métrica <select name="metrica" required>{equipamentoLeitura.metricas.map((metrica) => <option key={metrica.nome} value={metrica.nome}>{metrica.nome} ({metrica.unidade})</option>)}</select></label><label>Valor medido <input name="valor" type="number" step="any" required placeholder="Ex.: 2.7"/></label><p className="ad-note">Os limites e a condição do equipamento serão recalculados pelo serviço de monitoramento após a integração real.</p><div className="ad-form-footer"><button type="button" className="ad-secondary-btn" onClick={() => setModal(null)}>Cancelar</button><button type="submit" className="ad-primary-btn">Registrar leitura</button></div></form>}
-          {modal === "novo-funcionario" && <form onSubmit={criarFuncionario} className="ad-form"><label>Nome completo <input name="nome" required minLength={3} placeholder="Nome do funcionário"/></label><label>E-mail corporativo <input name="email" type="email" required placeholder="funcionario@empresa.com"/></label><label>Função <input name="funcao" required placeholder="Ex.: Técnico de manutenção"/></label><p className="ad-note">Em produção, o backend deve gerar o convite de ativação; o administrador não define a senha do funcionário.</p><div className="ad-form-footer"><button type="button" className="ad-secondary-btn" onClick={() => setModal(null)}>Cancelar</button><button type="submit" className="ad-primary-btn">Cadastrar funcionário</button></div></form>}
         </section></div>}
     </div>
   );
