@@ -6,13 +6,13 @@ import { api, getSession } from "../techassist/api";
 const categorias = ["Suporte geral", "Problema técnico", "Ordem de serviço", "Peças e equipamentos", "Outros"];
 const nomesStatus = { aberto: "Aguardando atendimento", em_atendimento: "Em atendimento", resolvido: "Resolvido" };
 const conversaDemo = {
-  id: 9001, clienteId: 101, clienteNome: "Mariana Oliveira", assunto: "Dúvida sobre minha manutenção",
+  id: 9001, clienteId: 11, clienteNome: "Mariana Oliveira", assunto: "Dúvida sobre minha manutenção",
   categoria: "Ordem de serviço", status: "em_atendimento",
   atualizadoEm: "2026-11-12 08:00:00", ultimaMensagem: "Vou verificar a situação do equipamento.",
 };
 const mensagensDemo = [
-  { id: 1, conversaId: 9001, remetenteTipo: "cliente", remetenteNome: "Mariana Oliveira", texto: "Olá! Gostaria de saber como está o andamento da manutenção do meu equipamento.", criadoEm: "2026-11-12 07:58:00" },
-  { id: 2, conversaId: 9001, remetenteTipo: "equipe", remetenteNome: "Equipe TechAssist", texto: "Olá, Mariana! Vou verificar a situação do equipamento.", criadoEm: "2026-11-12 08:00:00" },
+  { id: 1, conversaId: 9001, remetenteTipo: "cliente", remetenteId: 11, remetenteNome: "Mariana Oliveira", texto: "Olá! Gostaria de saber como está o andamento da manutenção do meu equipamento.", criadoEm: "2026-11-12 07:58:00" },
+  { id: 2, conversaId: 9001, remetenteTipo: "equipe", remetenteId: 31, remetenteNome: "Carolina Mendes", texto: "Olá, Mariana! Vou verificar a situação do equipamento.", criadoEm: "2026-11-12 08:00:00" },
 ];
 
 function horario(valor) {
