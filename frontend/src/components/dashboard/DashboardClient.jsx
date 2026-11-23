@@ -34,7 +34,7 @@ function formatarData(valor) {
   return Number.isNaN(data.getTime()) ? String(valor) : data.toLocaleDateString("pt-BR");
 }
 
-function converterDados(ordensApi) {
+function converterDados(ordensApi, painel = {}) {
   const equipamentos = new Map();
   const ordens = ordensApi.map((item) => {
     const equipamentoId = item.id_equipamento;
@@ -63,17 +63,50 @@ function converterDados(ordensApi) {
       tecnico: item.tecnico || "Não atribuído",
       prioridade: "Média",
       status: ROTULOS_STATUS[status] || status,
+      statusApi: status,
       data: formatarData(item.prazo || item.data_manutencao || item.criado_em),
       tipo: item.servico || "Manutenção",
     };
   });
 
+  for (const equipamento of painel.equipamentos ?? []) {
+    const id = equipamento.id_equipamento;
+    const metricas = (painel.metricas ?? []).filter((m) => Number(m.id_equipamento) === Number(id)).map((m) => {
+      const leitura = (painel.leituras ?? []).find((l) => Number(l.id_metrica) === Number(m.id_metrica));
+      const valor = leitura ? Number(leitura.valor) : null;
+      const atencao = Number(m.limite_atencao);
+      const critico = Number(m.limite_critico);
+      return {
+        id: m.id_metrica, nome: m.nome, unidade: m.unidade,
+        valor: valor === null ? "—" : String(valor).replace(".", ","),
+        percentual: valor === null || critico <= 0 ? 0 : Math.max(0, Math.min(100, valor / critico * 100)),
+        critico: valor !== null && valor >= critico,
+        alerta: valor !== null && valor >= atencao
+      };
+    });
+    const avisos = metricas.filter((m) => m.alerta);
+    const saude = metricas.some((m) => m.valor !== "—")
+      ? Math.max(0, 100 - Math.round(metricas.reduce((max, m) => Math.max(max, m.percentual), 0)))
+      : null;
+    equipamentos.set(id, {
+      id, codigo: "EQ-" + String(id).padStart(3, "0"),
+      nome: equipamento.nome, local: equipamento.numero_serie ? "Série " + equipamento.numero_serie : equipamento.marca + " " + equipamento.modelo,
+      status: avisos.some((m) => m.critico) ? "Crítico" : avisos.length ? "Atenção" : metricas.some((m) => m.valor !== "—") ? "Normal" : "Sem monitoramento",
+      saude, ultimaLeitura: metricas.some((m) => m.valor !== "—") ? "Registrada no banco" : "Sem leitura",
+      metricas
+    });
+  }
+  const idsEquipamentos = new Set(equipamentos.keys());
   return {
     ordens,
     equipamentos: [...equipamentos.values()],
-    pecas: [],
+    pecas: (painel.pecas ?? []).map((p) => ({
+      id: p.id_peca, nome: p.nome, equipamentoId: null, estado: p.status === "inativa" ? "Inativa" : p.status === "esgotada" ? "Esgotada" : "Disponível",
+      integridade: p.status === "disponivel" ? 100 : 0, quantidade: p.quantidade
+    })),
+
     alertas: [],
-    funcionarios: [],
+    funcionarios: (painel.funcionarios ?? []).map((f) => ({ id:f.id, nome:f.nome, ativo:f.status === "ativo" })),
     auditoria: [],
     integracoes: [],
     historicoMedicoes: [],
@@ -102,8 +135,8 @@ export default function DashboardClient({ secao }) {
         }
 
         const usuario = { ...usuarioApi, perfil };
-        const ordensApi = await api("/ordens");
-        const dados = converterDados(ordensApi ?? []);
+        const [ordensApi, painel] = await Promise.all([api("/ordens"), api("/painel/resumo")]);
+        const dados = converterDados(ordensApi ?? [], painel ?? {});
         if (ativo) {
           setSession({ ...sessao, usuario: usuarioApi });
           setEstado({ carregando: false, usuario, dados: dados ?? {}, erro: "" });
