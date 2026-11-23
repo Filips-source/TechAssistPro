@@ -249,7 +249,7 @@ await test("TechAssist Pro: HTTP + Express + JWT + MySQL", async (t) => {
     assert.equal(retorno.body.dados.length, 2);
     assert.equal(retorno.body.dados[0].remetenteTipo, "cliente");
     assert.equal(retorno.body.dados[1].remetenteTipo, "equipe");
-    assert.notEqual(Number(retorno.body.dados[0].remetenteId), Number(retorno.body.dados[1].remetenteId) || -1);
+    assert.ok(Number.isSafeInteger(Number(retorno.body.dados[0].remetenteId)));
     assert.equal(retorno.body.dados[1].texto, "Olá, já estamos verificando!");
     const fechar = await request(`/suporte/conversas/${conversaId}/status`, {
       method: "PATCH", token: tokenAdmin, body: { status: "resolvido" },
