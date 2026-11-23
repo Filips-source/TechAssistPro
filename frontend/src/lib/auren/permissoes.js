@@ -24,7 +24,7 @@ export const PERMISSOES = Object.freeze({
     "pecas:todas:ler", "metricas:todas:ler", "metricas:todas:atualizar",
     "manutencoes:todas:ler", "manutencoes:todas:atualizar",
     "manutencoes:atribuir", "agenda:toda:ler", "funcionarios:gerenciar",
-    "funcionarios:criar", "relatorios:visualizar", "alertas:gerenciar", "perfil:editar", "suporte:atender",
+    "funcionarios:criar", "ferramentas:gerenciar", "relatorios:visualizar", "alertas:gerenciar", "perfil:editar", "suporte:atender",
   ],
   desenvolvedor: ["*"],
 });
@@ -42,6 +42,7 @@ export const MENU = [
   { secao: "ordens", rotulo: "Ordens de serviço", icone: "tool", permissoes: ["manutencoes:atribuidas:ler", "manutencoes:todas:ler"] },
   { secao: "agenda", rotulo: "Agenda e histórico", icone: "calendar", permissoes: ["agenda:propria:ler", "agenda:toda:ler"] },
   { secao: "funcionarios", rotulo: "Funcionários", icone: "users", permissao: "funcionarios:gerenciar" },
+  { secao: "ferramentas", rotulo: "Ferramentas", icone: "tool", permissao: "ferramentas:gerenciar" },
   { secao: "relatorios", rotulo: "Relatórios", icone: "chart", permissao: "relatorios:visualizar" },
   { secao: "auditoria", rotulo: "Auditoria", icone: "shield", apenas: ["desenvolvedor"] },
   { secao: "integracoes", rotulo: "Integrações", icone: "settings", apenas: ["desenvolvedor"] },
