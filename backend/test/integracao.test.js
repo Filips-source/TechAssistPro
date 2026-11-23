@@ -25,6 +25,7 @@ await conexao.query(
     dbName,
   ),
 );
+await conexao.query(await readFile("../database/migrations/2026-11-23-dashboard-operacional.sql", "utf8"));
 await conexao.end();
 const { app } = await import("../app.js");
 const { pool } = await import("../config/database.js");
@@ -57,6 +58,7 @@ async function request(
     headers: r.headers,
   };
 }
+function retornoMensagemTipoSeguro(mensagem) { return mensagem.remetenteTipo; }
 const eq = {
   tipo: "notebook",
   marca: "Dell",
@@ -240,9 +242,14 @@ await test("TechAssist Pro: HTTP + Express + JWT + MySQL", async (t) => {
     });
     assert.equal(resposta.status, 201);
     assert.equal(resposta.body.dados.remetenteTipo, "equipe");
+    assert.ok(Number.isSafeInteger(Number(resposta.body.dados.remetenteId)));
+    assert.equal(retornoMensagemTipoSeguro(resposta.body.dados), "equipe");
     const retorno = await request(`/suporte/conversas/${conversaId}/mensagens`, { token: tokenCliente });
     assert.equal(retorno.status, 200);
     assert.equal(retorno.body.dados.length, 2);
+    assert.equal(retorno.body.dados[0].remetenteTipo, "cliente");
+    assert.equal(retorno.body.dados[1].remetenteTipo, "equipe");
+    assert.notEqual(Number(retorno.body.dados[0].remetenteId), Number(retorno.body.dados[1].remetenteId) || -1);
     assert.equal(retorno.body.dados[1].texto, "Olá, já estamos verificando!");
     const fechar = await request(`/suporte/conversas/${conversaId}/status`, {
       method: "PATCH", token: tokenAdmin, body: { status: "resolvido" },
@@ -589,6 +596,59 @@ await test("TechAssist Pro: HTTP + Express + JWT + MySQL", async (t) => {
       );
     },
   );
+  await t.test("dashboard operacional: ferramentas, relatórios, métricas e isolamento", async () => {
+    assert.equal((await request("/painel/resumo")).status, 401);
+    const resumoCliente = await request("/painel/resumo", { token: tokenCliente });
+    assert.equal(resumoCliente.status, 200);
+    assert.equal(resumoCliente.body.dados.ferramentas.length, 0);
+    assert.equal(resumoCliente.body.dados.relatorios.length, 0);
+    const ferramentas = await request("/painel/resumo", { token: tokenAdmin });
+    assert.equal(ferramentas.status, 200);
+    assert.ok(ferramentas.body.dados.ferramentas.length >= 5);
+    const ferramenta = {
+      nome:"Ferramenta " + suffix, categoria:"Diagnóstico", descricao:"Ferramenta de teste",
+      quantidade:2, estado:"disponivel"
+    };
+    assert.equal((await request("/painel/ferramentas", {
+      token:tokenCliente, method:"POST", body:ferramenta
+    })).status, 403);
+    const criada = await request("/painel/ferramentas", {
+      token:tokenAdmin, method:"POST", body:ferramenta
+    });
+    assert.equal(criada.status, 200);
+    const id = criada.body.dados.id_ferramenta;
+    assert.equal((await request("/painel/ferramentas/" + id, {
+      token:tokenAdmin, method:"PUT", body:{...ferramenta, quantidade:3}
+    })).body.dados.quantidade, 3);
+    assert.equal((await request("/painel/ferramentas/" + id, {
+      token:tokenAdmin, method:"DELETE"
+    })).status, 204);
+    const relatorio = await request("/painel/relatorios", {
+      token:tokenAdmin, method:"POST", body:{
+        titulo:"Diagnóstico " + suffix, tipo:"diagnostico",
+        conteudo:"Relatório ilustrativo sem um reparo de verdade."
+      }
+    });
+    assert.equal(relatorio.status, 200);
+    assert.ok(relatorio.body.dados.id_relatorio);
+    const novo = await request("/painel/metricas", {
+      token:tokenAdmin, method:"POST", body:{
+        id_equipamento:1, nome:"Temperatura " + suffix,
+        unidade:"°C", limite_atencao:70, limite_critico:90
+      }
+    });
+    assert.equal(novo.status, 200);
+    assert.equal((await request("/painel/leituras", {
+      token:tokenCliente, method:"POST",
+      body:{id_metrica:novo.body.dados.id_metrica,valor:71}
+    })).status,403);
+    assert.equal((await request("/painel/leituras", {
+      token:tokenAdmin, method:"POST",
+      body:{id_metrica:novo.body.dados.id_metrica,valor:71}
+    })).status,200);
+    assert.equal((await request("/painel/resumo", { token:tokenAdmin })).body.dados.leituras.some((l) =>
+      l.id_metrica === novo.body.dados.id_metrica), true);
+  });
   await t.test(
     "CORS permite preflight da origem configurada e bloqueia outra origem",
     async () => {
