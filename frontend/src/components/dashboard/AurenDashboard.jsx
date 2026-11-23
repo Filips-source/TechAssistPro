@@ -264,6 +264,8 @@ export default function AurenDashboard({ usuario, dados, secao, demonstracao, on
     conteudo = <><SecaoTitulo titulo="Agenda e histórico" subtitulo="Próximos atendimentos e serviços já realizados"/><div className="ad-agenda-grid"><section className="ad-panel"><h3>Próximos serviços</h3><div className="ad-timeline">{ordens.filter((item) => item.status !== "Concluída").map((ordem) => <div className="ad-time-entry" key={ordem.id}><span className="ad-time-dot"/><div><small>{ordem.data} · {ordem.codigo}</small><strong>{ordem.titulo}</strong><span>{ordem.tecnico || "A definir"}</span></div><ClasseStatus valor={ordem.status}/></div>)}{!pendentes && <Vazio mensagem="Sem serviços agendados."/>}</div></section><section className="ad-panel"><h3>Histórico concluído</h3><div className="ad-timeline">{ordens.filter((item) => item.status === "Concluída").map((ordem) => <div className="ad-time-entry" key={ordem.id}><span className="ad-time-dot is-done"/><div><small>{ordem.data} · {ordem.codigo}</small><strong>{ordem.titulo}</strong><span>{ordem.tipo}</span></div><Icon nome="check" tamanho={20}/></div>)}{!ordens.some((item) => item.status === "Concluída") && <Vazio mensagem="Nenhuma manutenção concluída neste período."/>}</div></section></div></>;
   } else if (secao === "funcionarios") {
     conteudo = <GestaoUsuarios demonstracao={demonstracao} dadosIniciais={funcionarios}/>;
+  } else if (secao === "pecas") {
+    conteudo = secaoOperacional("pecas");
   } else if (secao === "ferramentas") {
     conteudo = secaoOperacional("ferramentas");
   } else if (secao === "relatorios") {
