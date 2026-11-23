@@ -4,6 +4,14 @@ import { useCallback, useEffect, useState } from "react";
 import { api } from "../techassist/api";
 
 const CONFIG = {
+  pecas: {
+    titulo: "Estoque de peças", singular: "Peça", endpoint: "/pecas", id: "id_peca",
+    campos: [
+      ["nome","Nome","text",true],["descricao","Descrição","textarea",false],
+      ["quantidade","Quantidade","number",true],["valor","Valor unitário (R$)","number",true],
+      ["status","Status","select",true,["disponivel","esgotada","inativa"]]
+    ]
+  },
   ferramentas: {
     titulo: "Ferramentas e materiais de bancada", singular: "Ferramenta", endpoint: "/painel/ferramentas",
     id: "id_ferramenta",
@@ -43,7 +51,7 @@ const CONFIG = {
 };
 const legenda = {
   disponivel: "Disponível", em_uso: "Em uso", manutencao: "Em manutenção",
-  preventivo: "Preventivo", diagnostico: "Diagnóstico", operacional: "Operacional"
+  esgotada: "Esgotada", inativa: "Inativa", preventivo: "Preventivo", diagnostico: "Diagnóstico", operacional: "Operacional"
 };
 const formatar = (valor) => typeof valor === "string" ? (valor.length > 130 ? valor.slice(0, 130) + "…" : valor) : (valor ?? "—");
 
@@ -126,8 +134,8 @@ export default function GestorOperacional({ tipo, usuario, onDadosAlterados }) {
         ? <p className="ad-muted">{dados.length ? "Nenhum resultado para a busca." : "Nenhum registro cadastrado neste módulo."}</p>
         : <section className="ad-operational-grid">
           {filtrados.map((registro) => <article key={registro[conf.id]} className="ad-panel ad-operational-item">
-            <div><strong>{tituloRegistro(registro)}</strong><small>{tipo === "ferramentas" ? (registro.categoria + " · " + (legenda[registro.estado] ?? registro.estado)) : tipo === "relatorios" ? (legenda[registro.tipo] ?? registro.tipo) : tipo === "equipamentos" ? (registro.marca + " · " + registro.modelo) : ("Equipamento #" + registro.id_equipamento + " · " + registro.unidade)}</small></div>
-            <p>{formatar(registro.descricao ?? registro.conteudo ?? registro.observacoes ?? (tipo === "metricas" ? ("Atenção: " + registro.limite_atencao + " / Crítico: " + registro.limite_critico) : ("Quantidade: " + registro.quantidade)))}</p>
+            <div><strong>{tituloRegistro(registro)}</strong><small>{tipo === "ferramentas" ? (registro.categoria + " · " + (legenda[registro.estado] ?? registro.estado)) : tipo === "relatorios" ? (legenda[registro.tipo] ?? registro.tipo) : tipo === "pecas" ? ("Qtd.: " + registro.quantidade + " · R$ " + registro.valor) : tipo === "equipamentos" ? (registro.marca + " · " + registro.modelo) : ("Equipamento #" + registro.id_equipamento + " · " + registro.unidade)}</small></div>
+            <p>{formatar(registro.descricao || registro.conteudo || registro.observacoes ?? (tipo === "metricas" ? ("Atenção: " + registro.limite_atencao + " / Crítico: " + registro.limite_critico) : ("Quantidade: " + registro.quantidade)))}</p>
             {podeEditar && <div className="ad-operation-actions">
               <button type="button" className="ad-secondary-btn" onClick={() => abrir(registro)}>Editar</button>
               {administrador && <button type="button" className="ad-danger-btn" disabled={salvando} onClick={() => excluir(registro)}>Excluir</button>}
