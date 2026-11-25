@@ -373,6 +373,28 @@
 
 
 /* Gestão de usuários — extensão do modal existente, sem alterar o layout da dashboard */
+.ad-toolbar { flex-wrap:wrap; }
+.ad-search { min-width:0; flex:1 1 220px; }
+.ad-search input,.support-composer textarea { min-width:0; }
+.ad-modal :is(input,select,textarea),.ad-users-password { min-width:0; max-width:100%; }
+.ad-profile-card,.ad-feedback,.support-contact-bottom { overflow-wrap:anywhere; }
+.ad-modal-backdrop { overflow-y:auto; }
+.ad-modal { max-height:calc(100dvh - 40px); }
+.auren-dashboard :is(button,a,input,select,textarea):focus-visible { outline:2px solid #ffb2aa; outline-offset:3px; }
+@media(max-width:510px) {
+  .ad-topbar { min-height:65px; height:auto; padding-top:10px; padding-bottom:10px; gap:8px; }
+  .ad-top-left,.ad-breadcrumb { min-width:0; }
+  .ad-breadcrumb strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .ad-top-avatar,.ad-top-separator { display:none; }
+  .ad-top-right { flex-shrink:0; gap:6px; }
+  .ad-role-tag { max-width:92px; overflow:hidden; text-overflow:ellipsis; }
+  .ad-modal-backdrop { padding:12px; }
+  .ad-modal { padding:18px; max-height:calc(100dvh - 24px); }
+  .ad-form-footer { flex-wrap:wrap; }
+  .ad-form-footer button { flex:1; min-height:44px; }
+  .support-composer textarea,.ad-form :is(input,select,textarea),.support-new-form :is(input,select,textarea) { font-size:16px; }
+  .support-filters button,.ad-mobile-trigger,.ad-logout-btn { min-height:44px; }
+}
 .ad-users-heading { gap:16px; }
 .ad-users-actions { display:flex; gap:9px; flex-wrap:wrap; justify-content:flex-end; }
 .ad-users-modal { width:min(740px,100%); max-height:min(90vh,850px); overflow-y:auto; }

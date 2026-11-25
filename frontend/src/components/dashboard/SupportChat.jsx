@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { api, getSession } from "../techassist/api";
+import { identidadeConta, mensagemPropria } from "../../lib/auren/chat.mjs";
+import { api, getSession, setSession } from "../techassist/api";
 
 const categorias = ["Suporte geral", "Problema técnico", "Ordem de serviço", "Peças e equipamentos", "Outros"];
 const nomesStatus = { aberto: "Aguardando atendimento", em_atendimento: "Em atendimento", resolvido: "Resolvido" };
@@ -32,7 +33,11 @@ function ChatSymbol({ size = 20 }) {
   return <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 11.3a7.6 7.6 0 0 1-7.6 7.6H7l-4 2v-5.4a7.6 7.6 0 1 1 17-4.2Z"/><path d="M8 10.5h8M8 14h5"/></svg>;
 }
 
-export default function SupportChat({ usuario, demonstracao = false }) {
+export default function SupportChat(props) {
+  return <SupportChatSession key={identidadeConta(props.usuario)} {...props}/>;
+}
+
+function SupportChatSession({ usuario, demonstracao = false }) {
   const agente = ["administrador", "desenvolvedor"].includes(usuario.perfil);
   const [aba, setAba] = useState("conversas");
   const [contatos, setContatos] = useState([]);
@@ -53,6 +58,14 @@ export default function SupportChat({ usuario, demonstracao = false }) {
   const fimRef = useRef(null);
   const chatRef = useRef(null);
   const ultimaIdRef = useRef(null);
+  const montadoRef = useRef(false);
+  const versaoConversasRef = useRef(0);
+  const selecionadaRef = useRef(selecionadaId);
+  selecionadaRef.current = selecionadaId;
+  useEffect(() => {
+    montadoRef.current = true;
+    return () => { montadoRef.current = false; versaoConversasRef.current += 1; };
+  }, []);
 
   const recarregarContatos = useCallback(async () => {
     if (!agente || demonstracao) return;
@@ -66,7 +79,9 @@ export default function SupportChat({ usuario, demonstracao = false }) {
 
   const recarregarConversas = useCallback(async () => {
     if (demonstracao) return;
+    const versao = ++versaoConversasRef.current;
     const lista = await api("/suporte/conversas");
+    if (!montadoRef.current || versao !== versaoConversasRef.current) return;
     setConversas(lista);
     setSelecionadaId((anterior) => lista.some((item) => item.id === anterior) ? anterior : lista[0]?.id ?? null);
     setCarregando(false);
@@ -96,6 +111,7 @@ export default function SupportChat({ usuario, demonstracao = false }) {
     const controller = new AbortController();
     let encerrado = false;
     let espera;
+    let resolverEspera;
     async function escutar() {
       while (!encerrado) {
         try {
@@ -107,6 +123,9 @@ export default function SupportChat({ usuario, demonstracao = false }) {
             headers: { Authorization: `Bearer ${token}`, Accept: "text/event-stream" },
             cache: "no-store", signal: controller.signal,
           });
+          if (encerrado || getSession()?.token !== token) return;
+          if (resposta.status === 401) { setSession(null); return; }
+          if (resposta.status === 403) { setErro("Seu perfil não pode acessar o suporte."); return; }
           if (!resposta.ok || !resposta.body) throw new Error("Canal indisponível");
           setConectado(true);
           const reader = resposta.body.getReader();
@@ -130,7 +149,7 @@ export default function SupportChat({ usuario, demonstracao = false }) {
         }
         if (!encerrado) setConectado(false);
         if (encerrado) break;
-        await new Promise((resolve) => { espera = setTimeout(resolve, 2500); });
+        await new Promise((resolve) => { resolverEspera = resolve; espera = setTimeout(resolve, 2500); });
       }
     }
     escutar();
@@ -140,6 +159,7 @@ export default function SupportChat({ usuario, demonstracao = false }) {
       controller.abort();
       clearInterval(fallback);
       if (espera) clearTimeout(espera);
+      resolverEspera?.();
     };
   }, [demonstracao]);
 
@@ -170,7 +190,7 @@ export default function SupportChat({ usuario, demonstracao = false }) {
     try {
       if (demonstracao) {
         const item = { ...conversaDemo, id: Date.now(), clienteId: usuario.id, clienteNome: usuario.nome, assunto: dados.assunto, categoria: dados.categoria, status: "aberto", atualizadoEm: new Date().toISOString(), ultimaMensagem: dados.mensagem };
-        setMensagensDemoPorConversa((anterior) => ({ ...anterior, [item.id]: [{ id: Date.now(), conversaId: item.id, remetenteTipo: "cliente", remetenteNome: usuario.nome, texto: dados.mensagem, criadoEm: new Date().toISOString() }] }));
+        setMensagensDemoPorConversa((anterior) => ({ ...anterior, [item.id]: [{ id: Date.now(), conversaId: item.id, remetenteTipo: "cliente", remetenteId: usuario.id, remetenteNome: usuario.nome, texto: dados.mensagem, criadoEm: new Date().toISOString() }] }));
         setConversas((anterior) => [item, ...anterior]);
         setSelecionadaId(item.id);
       } else {
@@ -198,7 +218,7 @@ export default function SupportChat({ usuario, demonstracao = false }) {
         await api(`/suporte/conversas/${conversa.id}/mensagens`, { method: "POST", body: { mensagem: conteudo } });
         setSinal((atual) => atual + 1);
       }
-      setTexto("");
+      if (selecionadaRef.current === conversa.id) setTexto("");
     } catch (e) { setErro(e.message); }
     finally { setEnviando(false); }
   }
@@ -238,7 +258,7 @@ export default function SupportChat({ usuario, demonstracao = false }) {
           <div className="support-conversation-list">
             {carregando && <p className="support-list-empty">Carregando atendimentos...</p>}
             {!carregando && !filtradas.length && <div className="support-list-empty"><ChatSymbol size={24}/><p>Nenhum atendimento encontrado.</p></div>}
-            {filtradas.map((item) => <button type="button" key={item.id} className={`support-thread ${item.id === selecionadaId ? "is-selected" : ""}`} onClick={() => { setSelecionadaId(item.id); setNovo(false); setTexto(""); setMensagens([]); }}><span className="support-thread-avatar">{avatar(agente ? item.clienteNome : "TechAssist")}</span><span className="support-thread-copy"><span className="support-thread-top"><strong>{agente ? item.clienteNome : item.assunto}</strong><time>{dia(item.atualizadoEm)}</time></span><span className="support-thread-subject">{agente ? item.assunto : item.categoria}</span><span className="support-thread-preview">{item.ultimaMensagem || "Conversa iniciada"}</span></span><span className={`support-thread-state support-state-${item.status}`} aria-label={nomesStatus[item.status]}/></button>)}
+            {filtradas.map((item) => <button type="button" key={item.id} className={`support-thread ${item.id === selecionadaId ? "is-selected" : ""}`} onClick={() => { if (item.id !== selecionadaId) { setSelecionadaId(item.id); setTexto(""); setMensagens([]); } setNovo(false); }}><span className="support-thread-avatar">{avatar(agente ? item.clienteNome : "TechAssist")}</span><span className="support-thread-copy"><span className="support-thread-top"><strong>{agente ? item.clienteNome : item.assunto}</strong><time>{dia(item.atualizadoEm)}</time></span><span className="support-thread-subject">{agente ? item.assunto : item.categoria}</span><span className="support-thread-preview">{item.ultimaMensagem || "Conversa iniciada"}</span></span><span className={`support-thread-state support-state-${item.status}`} aria-label={nomesStatus[item.status]}/></button>)}
           </div>
           <div className="support-inbox-footer"><span className={`support-connection-dot ${conectado ? "is-online" : ""}`}/><span>{demonstracao ? "Prévia sem sincronização" : conectado ? "Atualizações em tempo real" : "Reconectando ao atendimento..."}</span></div>
         </aside>
@@ -249,9 +269,7 @@ export default function SupportChat({ usuario, demonstracao = false }) {
           : <>
             <div className="support-chat-head"><div className="support-agent-avatar">{avatar(agente ? conversa.clienteNome : "TechAssist Pro")}</div><div className="support-chat-heading"><h3>{agente ? conversa.clienteNome : "Equipe TechAssist"}</h3><p>{conversa.assunto} <span aria-hidden="true">·</span> #{conversa.id}</p></div><div className={`support-status-pill support-pill-${conversa.status}`}><span/>{nomesStatus[conversa.status] ?? conversa.status}</div></div>
             <div className="support-message-area" ref={chatRef} role="log" aria-label="Histórico de mensagens" aria-live="polite" aria-relevant="additions text"><div className="support-chat-date">Histórico do atendimento</div>{!mensagens.length && <p className="support-list-empty">Ainda não há mensagens nesta conversa.</p>}{mensagens.map((mensagem) => {
-              const proprio = agente
-                ? mensagem.remetenteTipo === "equipe" && Number(mensagem.remetenteId) === Number(usuario.id)
-                : mensagem.remetenteTipo === "cliente" && Number(mensagem.remetenteId) === Number(usuario.id);
+              const proprio = mensagemPropria(mensagem, usuario);
               return <div className={`support-message-row ${proprio ? "is-own" : ""}`} key={mensagem.id}><span className="support-message-avatar">{avatar(proprio ? usuario.nome : mensagem.remetenteNome)}</span><div className="support-message-content"><span className="support-message-author">{proprio ? "Você" : mensagem.remetenteNome}</span><div className="support-bubble">{mensagem.texto}</div><time>{horario(mensagem.criadoEm)}</time></div></div>;
             })}<div ref={fimRef}/></div>
             <div className="support-composer"><form onSubmit={enviarMensagem}><label htmlFor="support-message-text" className="support-sr-only">Escrever mensagem</label><textarea id="support-message-text" rows={2} value={texto} onChange={(e) => setTexto(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); e.currentTarget.form?.requestSubmit(); } }} placeholder="Escreva sua mensagem... (Enter para enviar)" maxLength={2000}/><button type="submit" className="support-send support-send-icon" disabled={!texto.trim() || enviando} aria-label="Enviar mensagem"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4Z"/></svg></button></form><div className="support-composer-bottom"><span>Shift + Enter para quebrar linha · {texto.length}/2000</span>{agente && <select className="support-status-select" aria-label="Alterar status do atendimento" value={conversa.status} onChange={(e) => mudarStatus(e.target.value)}><option value="aberto">Aguardando atendimento</option><option value="em_atendimento">Em atendimento</option><option value="resolvido">Resolvido</option></select>}</div></div>

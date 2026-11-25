@@ -19,7 +19,7 @@ export const criar = acao((r) => S.criar(r.body, r.usuario), 201);
 export const atualizar = acao((r) =>
   S.atualizar(r.params.id, r.body, r.usuario),
 );
-export const orcar = acao((r) => S.orcar(r.params.id, r.body), 201);
+export const orcar = acao((r) => S.orcar(r.params.id, r.body, r.usuario), 201);
 export const decidir = acao((r) => S.decidir(r.params.id, r.body, r.usuario));
 export const rastrear = acao((r) => S.rastrear(r.body));
 export const decidirRastreio = acao((r) => S.decidirRastreio(r.body));

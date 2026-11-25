@@ -1,3 +1,4 @@
+import { administrador, exigirAcessoOrdem } from "../utils/permissoes.js";
 import * as Model from "../models/OrdemModel.js";
 import {
   texto,
@@ -11,12 +12,7 @@ import {
 export const listar = Model.listar;
 export async function buscar(valor, usuario) {
   const o = await Model.buscar(id(valor));
-  if (
-    !o ||
-    (usuario.tipo === "cliente" && o.id_cliente !== usuario.id) ||
-    (usuario.tipo === "equipe" && usuario.perfil === "funcionario" && o.id_usuario !== usuario.id)
-  )
-    throw erro(404, "Ordem não encontrada.");
+  exigirAcessoOrdem(o, usuario);
   return o;
 }
 export async function rastrear(d = {}) {
@@ -79,7 +75,10 @@ export async function atualizar(valor, d, usuario) {
   if (d.status !== undefined) v.status = opcao(d.status, statusOS, "Status");
   for (const campo of ["diagnostico", "reparo_executado", "descricao"])
     if (d[campo] !== undefined) v[campo] = texto(d[campo], campo, 1, 2000);
-  if (d.id_usuario) v.id_usuario = id(d.id_usuario);
+  if (d.id_usuario !== undefined) {
+    if (!administrador(usuario)) throw erro(403, "Somente a administração pode atribuir técnicos.");
+    v.id_usuario = d.id_usuario === null ? null : id(d.id_usuario);
+  }
   if (d.prazo) {
     if (
       typeof d.prazo !== "string" ||
@@ -92,7 +91,7 @@ export async function atualizar(valor, d, usuario) {
   }
   return Model.atualizar(id(valor), v, usuario);
 }
-export async function orcar(valor, d) {
+export async function orcar(valor, d, usuario) {
   if (!Array.isArray(d.pecas) || d.pecas.length > 50)
     throw erro(422, "Informe uma lista de até 50 peças.");
   const pecas = d.pecas.map((p) => ({
@@ -109,7 +108,7 @@ export async function orcar(valor, d) {
       0,
       1000000,
     ),
-  });
+  }, usuario);
 }
 export async function decidir(valor, d, usuario) {
   const o = await buscar(valor, usuario);

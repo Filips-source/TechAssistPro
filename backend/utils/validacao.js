@@ -26,7 +26,7 @@ export function telefone(valor) {
 }
 export function id(valor) {
   const n = Number(valor);
-  if (!Number.isInteger(n) || n < 1)
+  if (!["string", "number"].includes(typeof valor) || !Number.isSafeInteger(n) || n < 1)
     throw erro(422, "ID deve ser um inteiro positivo.");
   return n;
 }

@@ -57,7 +57,7 @@ function validar(tipo, d) {
           : "disponivel",
   };
 }
-export const listar = (tipo) => Model.listar(tipo);
+export const listar = (tipo, usuario) => Model.listar(tipo, usuario);
 export async function criar(tipo, dados) {
   return Model.criar(tipo, validar(tipo, dados));
 }

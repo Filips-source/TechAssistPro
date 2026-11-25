@@ -1,10 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import { api, statusList } from "../techassist/api";
+import { formatarData } from "../../lib/auren/datas.mjs";
 import SupportChat from "./SupportChat";
 import GestaoUsuarios from "./GestaoUsuarios";
 import GestorOperacional from "./GestorOperacional";
-import { api } from "../techassist/api";
 import { useMemo, useState } from "react";
 import { MENU, NOMES_PERFIS, menuDoPerfil, pode } from "../../lib/auren/permissoes";
 
@@ -96,8 +97,8 @@ export default function AurenDashboard({ usuario, dados, secao, demonstracao, on
   const [feedback, setFeedback] = useState("");
   const [mobileMenu, setMobileMenu] = useState(false);
   const [busca, setBusca] = useState("");
-  const [recarregando, setRecarregando] = useState(false);
   const [revisao, setRevisao] = useState(0);
+  const [salvando, setSalvando] = useState(false);
 
   const papel = usuario.perfil;
   const podeCriarOrdem = pode(papel, "manutencoes:proprias:criar");
@@ -149,19 +150,25 @@ export default function AurenDashboard({ usuario, dados, secao, demonstracao, on
 
   async function atualizarOrdem(evento) {
     evento.preventDefault();
-    if (!podeEditarOrdem || !ordemAtiva) return;
+    if (!podeEditarOrdem || !ordemAtiva || salvando) return;
     const valores = new FormData(evento.currentTarget);
     const novoStatus = String(valores.get("status"));
     if (!demonstracao) {
-      setRecarregando(true);
+      setSalvando(true);
+      setFeedback("");
       try {
-        const payload = { status: novoStatus, descricao: String(valores.get("descricao") || "Atualização pelo painel") };
-        await api("/ordens/" + ordemAtiva.id, { method: "PATCH", body: payload });
-        setOrdens((lista) => lista.map((o) => o.id === ordemAtiva.id ? { ...o, status: rotulosStatus[novoStatus] ?? novoStatus, statusApi: novoStatus } : o));
-        setFeedback("Ordem atualizada no banco de dados.");
+        const body = { status: novoStatus, descricao: String(valores.get("descricao") || "Atualização pelo painel") };
+        for (const campo of ["diagnostico", "reparo_executado", "prazo"])
+          if (String(valores.get(campo) || "").trim()) body[campo] = String(valores.get(campo)).trim();
+        const salva = await api(`/ordens/${ordemAtiva.id}`, { method: "PATCH", body });
+        const status = rotulosStatus[salva.status] ?? salva.status;
+        setOrdens((anteriores) => anteriores.map((item) => item.id === salva.id_os
+          ? { ...item, status, statusApi: salva.status, diagnostico: salva.diagnostico || "", reparo_executado: salva.reparo_executado || "", prazo: salva.prazo?.slice(0, 10) || "", data: formatarData(salva.prazo || salva.data_manutencao || salva.criado_em) }
+          : item));
         setModal(null);
-      } catch (e) { setFeedback(e.message); }
-      finally { setRecarregando(false); }
+        setFeedback("Ordem atualizada e salva.");
+      } catch (erro) { setFeedback(erro.message); }
+      finally { setSalvando(false); }
       return;
     }
     executarDemo(() => {
@@ -172,15 +179,16 @@ export default function AurenDashboard({ usuario, dados, secao, demonstracao, on
   }
 
   async function atribuirOrdem(id, tecnicoId) {
-    if (!podeAtribuir) return;
+    if (!podeAtribuir || salvando) return;
     if (!demonstracao) {
-      if (!tecnicoId) { setFeedback("Selecione um técnico válido."); return; }
+      setSalvando(true);
       try {
-        await api("/ordens/" + id, { method: "PATCH", body: { id_usuario: tecnicoId, descricao: "Técnico atribuído pelo painel" } });
-        const tecnico = funcionarios.find((p) => p.id === tecnicoId);
-        setOrdens((lista) => lista.map((o) => o.id === id ? { ...o, tecnicoId, tecnico: tecnico?.nome ?? "Técnico" } : o));
-        setFeedback("Técnico atribuído no banco de dados.");
-      } catch (e) { setFeedback(e.message); }
+        const salva = await api(`/ordens/${id}`, { method: "PATCH", body: { id_usuario: tecnicoId || null } });
+        setOrdens((anteriores) => anteriores.map((item) => item.id === id
+          ? { ...item, tecnicoId: salva.id_usuario, tecnico: salva.tecnico || "Não atribuído" } : item));
+        setFeedback("Responsável atualizado e salvo.");
+      } catch (erro) { setFeedback(erro.message); }
+      finally { setSalvando(false); }
       return;
     }
     executarDemo(() => {
@@ -222,7 +230,6 @@ export default function AurenDashboard({ usuario, dados, secao, demonstracao, on
     "pronto para retirada": "Pronto para retirada", entregue: "Concluída",
     cancelado: "Cancelada", "produto armazenado": "Produto armazenado"
   };
-  const opcoesStatus = Object.entries(rotulosStatus);
   const secaoOperacional = (tipo) => demonstracao
     ? <div className="ad-demo-banner">Gerenciamento completo requer conexão com o MySQL. Desative o modo demonstração para testar alterações persistentes.</div>
     : <GestorOperacional key={tipo + revisao} tipo={tipo} usuario={usuario} onDadosAlterados={() => setRevisao((n) => n + 1)} />;
@@ -255,13 +262,13 @@ export default function AurenDashboard({ usuario, dados, secao, demonstracao, on
   } else if (secao === "equipamentos") {
     conteudo = <>{!demonstracao && secaoOperacional("equipamentos")}<SecaoTitulo titulo="Equipamentos monitorados" subtitulo="Condição atual e últimas leituras dos ativos disponíveis para seu perfil"/><div className="ad-equipment-grid">{equipamentos.map((equipamento) => <CartaoEquipamento key={equipamento.id} equipamento={equipamento} onMonitorar={() => window.location.assign(linkSecao("monitoramento"))}/>)}</div>{!equipamentos.length && <Vazio mensagem="Nenhum equipamento disponível para este perfil."/>}</>;
   } else if (secao === "monitoramento") {
-    conteudo = <>{(papel === "administrador" || papel === "desenvolvedor") && !demonstracao && secaoOperacional("metricas")}<SecaoTitulo titulo="Monitoramento de equipamentos e peças" subtitulo="Métricas configuráveis, condição das peças e alertas de manutenção" acao={<span className="ad-live"><span/> Leituras flexíveis</span>}/><div className="ad-monitor-grid">{equipamentos.map((equipamento) => <section className="ad-panel ad-monitor-card" key={equipamento.id}><div className="ad-panel-title"><div><span className="ad-equip-code">{equipamento.codigo}</span><h3>{equipamento.nome}</h3></div><ClasseStatus valor={equipamento.status}/></div><div className="ad-metric-grid">{equipamento.metricas.map((metrica) => <div className="ad-metric" key={metrica.nome}><small>{metrica.nome}</small><strong>{metrica.valor} <span>{metrica.unidade}</span></strong><Nivel valor={100 - Math.min(100, metrica.percentual)}/></div>)}</div><div className="ad-monitor-foot"><small className="ad-muted">Última leitura: {equipamento.ultimaLeitura}</small>{podeAtualizarMetricas && <button className="ad-text-btn" type="button" onClick={() => { setEquipamentoLeituraId(equipamento.id); setModal("registrar-leitura"); }}>Registrar leitura</button>}</div></section>)}</div><section className="ad-panel ad-orders-section"><SecaoTitulo titulo="Condição das peças" subtitulo="Integridade estimada dos componentes cadastrados"/><div className="ad-parts-grid">{pecas.map((peca) => <div className="ad-part" key={peca.id}><div><strong>{peca.nome}</strong><small>{equipamentos.find((item) => item.id === peca.equipamentoId)?.nome}</small></div><ClasseStatus valor={peca.estado}/><div className="ad-part-progress"><Nivel valor={peca.integridade}/><strong>{peca.integridade}%</strong></div></div>)}</div>{!pecas.length && <Vazio mensagem="Nenhuma peça monitorada."/>}</section></>;
+    conteudo = <>{(papel === "administrador" || papel === "desenvolvedor") && !demonstracao && secaoOperacional("metricas")}<SecaoTitulo titulo="Monitoramento de equipamentos e peças" subtitulo="Métricas configuráveis, condição das peças e alertas de manutenção" acao={<span className="ad-live"><span/> Leituras flexíveis</span>}/><div className="ad-monitor-grid">{equipamentos.map((equipamento) => <section className="ad-panel ad-monitor-card" key={equipamento.id}><div className="ad-panel-title"><div><span className="ad-equip-code">{equipamento.codigo}</span><h3>{equipamento.nome}</h3></div><ClasseStatus valor={equipamento.status}/></div><div className="ad-metric-grid">{equipamento.metricas.map((metrica) => <div className="ad-metric" key={metrica.nome}><small>{metrica.nome}</small><strong>{metrica.valor} <span>{metrica.unidade}</span></strong><Nivel valor={100 - Math.min(100, metrica.percentual)}/></div>)}</div><div className="ad-monitor-foot"><small className="ad-muted">Última leitura: {equipamento.ultimaLeitura}</small>{podeAtualizarMetricas && equipamento.metricas.length > 0 && <button className="ad-text-btn" type="button" onClick={() => { setEquipamentoLeituraId(equipamento.id); setModal("registrar-leitura"); }}>Registrar leitura</button>}</div></section>)}</div><section className="ad-panel ad-orders-section"><SecaoTitulo titulo="Condição das peças" subtitulo="Integridade estimada dos componentes cadastrados"/><div className="ad-parts-grid">{pecas.map((peca) => <div className="ad-part" key={peca.id}><div><strong>{peca.nome}</strong><small>{equipamentos.find((item) => item.id === peca.equipamentoId)?.nome}</small></div><ClasseStatus valor={peca.estado}/><div className="ad-part-progress"><Nivel valor={peca.integridade}/><strong>{peca.integridade}%</strong></div></div>)}</div>{!pecas.length && <Vazio mensagem="Nenhuma peça monitorada."/>}</section></>;
   } else if (secao === "solicitacoes") {
     conteudo = <><div className="ad-page-hero"><div><h2>Precisa de manutenção?</h2><p>Solicite um reparo manual ou acompanhe as preventivas planejadas para os seus equipamentos.</p></div><button type="button" className="ad-primary-btn" onClick={() => demonstracao ? setModal("nova-solicitacao") : window.location.assign("/orcamento")}><Icon nome="plus" tamanho={18}/> Nova solicitação</button></div><section className="ad-panel ad-orders-section"><SecaoTitulo titulo="Minhas solicitações" subtitulo="Histórico e andamento dos serviços"/><TabelaOrdens ordens={ordensFiltradas} equipamentos={equipamentos} podeEditar={false} podeAtribuir={false} funcionarios={[]}/></section></>;
   } else if (secao === "ordens") {
     conteudo = <><SecaoTitulo titulo="Ordens de serviço" subtitulo={papel === "funcionario" ? "Atualize a execução das atividades atribuídas a você" : "Controle prazos, responsáveis e etapas de execução"}/><div className="ad-toolbar"><div className="ad-search"><Icon nome="search" tamanho={18}/><input aria-label="Buscar ordens" placeholder="Buscar por OS, serviço ou status..." value={busca} onChange={(e) => setBusca(e.target.value)}/></div><span className="ad-toolbar-info">{ordensFiltradas.length} ordens</span></div><section className="ad-panel ad-table-panel"><TabelaOrdens ordens={ordensFiltradas} equipamentos={equipamentos} podeEditar={podeEditarOrdem} podeAtribuir={podeAtribuir} funcionarios={funcionarios} onEditar={(ordem) => {setOrdemAtiva(ordem); setModal("editar-ordem");}} onAtribuir={atribuirOrdem}/></section></>;
   } else if (secao === "agenda") {
-    conteudo = <><SecaoTitulo titulo="Agenda e histórico" subtitulo="Próximos atendimentos e serviços já realizados"/><div className="ad-agenda-grid"><section className="ad-panel"><h3>Próximos serviços</h3><div className="ad-timeline">{ordens.filter((item) => item.status !== "Concluída").map((ordem) => <div className="ad-time-entry" key={ordem.id}><span className="ad-time-dot"/><div><small>{ordem.data} · {ordem.codigo}</small><strong>{ordem.titulo}</strong><span>{ordem.tecnico || "A definir"}</span></div><ClasseStatus valor={ordem.status}/></div>)}{!pendentes && <Vazio mensagem="Sem serviços agendados."/>}</div></section><section className="ad-panel"><h3>Histórico concluído</h3><div className="ad-timeline">{ordens.filter((item) => item.status === "Concluída").map((ordem) => <div className="ad-time-entry" key={ordem.id}><span className="ad-time-dot is-done"/><div><small>{ordem.data} · {ordem.codigo}</small><strong>{ordem.titulo}</strong><span>{ordem.tipo}</span></div><Icon nome="check" tamanho={20}/></div>)}{!ordens.some((item) => item.status === "Concluída") && <Vazio mensagem="Nenhuma manutenção concluída neste período."/>}</div></section></div></>;
+    conteudo = <><SecaoTitulo titulo="Agenda e histórico" subtitulo="Próximos atendimentos e serviços já realizados"/><div className="ad-agenda-grid"><section className="ad-panel"><h3>Próximos serviços</h3><div className="ad-timeline">{ordens.filter((item) => !["Concluída", "Cancelada"].includes(item.status)).map((ordem) => <div className="ad-time-entry" key={ordem.id}><span className="ad-time-dot"/><div><small>{ordem.data} · {ordem.codigo}</small><strong>{ordem.titulo}</strong><span>{ordem.tecnico || "A definir"}</span></div><ClasseStatus valor={ordem.status}/></div>)}{!pendentes && <Vazio mensagem="Sem serviços agendados."/>}</div></section><section className="ad-panel"><h3>Histórico concluído</h3><div className="ad-timeline">{ordens.filter((item) => item.status === "Concluída").map((ordem) => <div className="ad-time-entry" key={ordem.id}><span className="ad-time-dot is-done"/><div><small>{ordem.data} · {ordem.codigo}</small><strong>{ordem.titulo}</strong><span>{ordem.tipo}</span></div><Icon nome="check" tamanho={20}/></div>)}{!ordens.some((item) => item.status === "Concluída") && <Vazio mensagem="Nenhuma manutenção concluída neste período."/>}</div></section></div></>;
   } else if (secao === "funcionarios") {
     conteudo = <GestaoUsuarios demonstracao={demonstracao} dadosIniciais={funcionarios}/>;
   } else if (secao === "pecas") {
@@ -294,7 +301,7 @@ export default function AurenDashboard({ usuario, dados, secao, demonstracao, on
       </div>
       {modal && <div className="ad-modal-backdrop" onMouseDown={(e) => { if (e.target === e.currentTarget) setModal(null); }}><section className="ad-modal" role="dialog" aria-modal="true" aria-labelledby="ad-modal-title"><div className="ad-modal-header"><h2 id="ad-modal-title">{modal === "nova-solicitacao" ? "Nova solicitação de reparo" : modal === "registrar-leitura" ? "Registrar leitura manual" : "Atualizar ordem de serviço"}</h2><button type="button" onClick={() => setModal(null)} aria-label="Fechar"><Icon nome="close"/></button></div>
           {modal === "nova-solicitacao" && <form onSubmit={criarSolicitacao} className="ad-form"><label>Equipamento <select name="equipamentoId" required>{equipamentos.map((item) => <option key={item.id} value={item.id}>{item.codigo} · {item.nome}</option>)}</select></label><label>Descrição do problema <textarea name="titulo" required minLength={5} maxLength={180} placeholder="Descreva o sintoma ou serviço desejado" rows={3}/></label><div className="ad-form-two"><label>Prioridade <select name="prioridade"><option>Baixa</option><option>Média</option><option>Alta</option></select></label><label>Data preferida <input name="data" type="date" required/></label></div><div className="ad-form-footer"><button type="button" className="ad-secondary-btn" onClick={() => setModal(null)}>Cancelar</button><button type="submit" className="ad-primary-btn">Solicitar reparo</button></div></form>}
-          {modal === "editar-ordem" && <form onSubmit={atualizarOrdem} className="ad-form"><p className="ad-muted">{ordemAtiva?.codigo} · {ordemAtiva?.titulo}</p><label>Etapa atual <select name="status" defaultValue={ordemAtiva?.statusApi ?? "recebido"}>{opcoesStatus.map(([valor,rotulo]) => <option value={valor} key={valor}>{rotulo}</option>)}</select><label>Descrição da atualização<input type="text" name="descricao" minLength={3} maxLength={500} defaultValue="Atualização pelo painel" required/></label></label><div className="ad-form-footer"><button type="button" className="ad-secondary-btn" onClick={() => setModal(null)}>Cancelar</button><button type="submit" disabled={recarregando} className="ad-primary-btn">{recarregando ? "Salvando..." : "Salvar atualização"}</button></div></form>}
+          {modal === "editar-ordem" && <form onSubmit={atualizarOrdem} className="ad-form"><p className="ad-muted">{ordemAtiva?.codigo} · {ordemAtiva?.titulo}</p><label>Etapa atual <select name="status" defaultValue={demonstracao ? ordemAtiva?.status : ordemAtiva?.statusApi}>{(demonstracao ? ["Pendente", "Agendada", "Em andamento", "Concluída"] : statusList).map((status) => <option key={status} value={status}>{status}</option>)}</select></label>{!demonstracao && <><label>Descrição da atualização<input name="descricao" minLength={3} maxLength={500} defaultValue="Atualização pelo painel" required/></label><label>Diagnóstico<textarea name="diagnostico" rows={3} maxLength={2000} defaultValue={ordemAtiva?.diagnostico}/></label><label>Reparo executado<textarea name="reparo_executado" rows={3} maxLength={2000} defaultValue={ordemAtiva?.reparo_executado}/></label><label>Prazo<input name="prazo" type="date" defaultValue={ordemAtiva?.prazo}/></label></>}<div className="ad-form-footer"><button type="button" className="ad-secondary-btn" disabled={salvando} onClick={() => setModal(null)}>Cancelar</button><button type="submit" className="ad-primary-btn" disabled={salvando}>{salvando ? "Salvando..." : "Salvar atualização"}</button></div></form>}
           {modal === "registrar-leitura" && equipamentoLeitura && <form onSubmit={registrarLeitura} className="ad-form"><p className="ad-muted">{equipamentoLeitura.codigo} · {equipamentoLeitura.nome}</p><label>Métrica <select name="metrica" required>{equipamentoLeitura.metricas.map((metrica) => <option key={metrica.nome} value={metrica.nome}>{metrica.nome} ({metrica.unidade})</option>)}</select></label><label>Valor medido <input name="valor" type="number" step="any" required placeholder="Ex.: 2.7"/></label><p className="ad-note">Os limites e a condição do equipamento serão recalculados pelo serviço de monitoramento após a integração real.</p><div className="ad-form-footer"><button type="button" className="ad-secondary-btn" onClick={() => setModal(null)}>Cancelar</button><button type="submit" className="ad-primary-btn">Registrar leitura</button></div></form>}
         </section></div>}
     </div>

@@ -1,3 +1,4 @@
+import { equipeRestrita } from "../utils/permissoes.js";
 import { pool, transacao } from "../config/database.js";
 import { erro } from "../utils/validacao.js";
 // Tabelas e colunas vêm somente desta lista fixa, nunca do usuário.
@@ -26,10 +27,18 @@ const esquemas = {
     publicos: "*",
   },
 };
-export async function listar(tipo) {
+export async function listar(tipo, usuario) {
   const s = esquemas[tipo];
+  let filtro = "";
+  const params = [];
+  if (equipeRestrita(usuario) && tipo !== "pecas") {
+    filtro = tipo === "clientes"
+      ? " WHERE EXISTS (SELECT 1 FROM equipamentos e JOIN ordens_servico o ON o.id_equipamento=e.id_equipamento WHERE e.id_cliente=clientes.id_cliente AND o.id_usuario=?)"
+      : " WHERE EXISTS (SELECT 1 FROM ordens_servico o WHERE o.id_equipamento=equipamentos.id_equipamento AND o.id_usuario=?)";
+    params.push(usuario.id);
+  }
   const [rows] = await pool.query(
-    `SELECT ${s.publicos} FROM ${tipo} ORDER BY ${s.id} DESC LIMIT 200`,
+    `SELECT ${s.publicos} FROM ${tipo}${filtro} ORDER BY ${s.id} DESC LIMIT 200`, params,
   );
   return rows;
 }

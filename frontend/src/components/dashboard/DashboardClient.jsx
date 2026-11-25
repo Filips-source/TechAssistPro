@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import AurenDashboard from "./AurenDashboard";
 import { api, getSession, setSession } from "../techassist/api";
 import { podeAcessarSecao } from "../../lib/auren/permissoes";
+import { formatarData } from "../../lib/auren/datas.mjs";
 
 const PERFIS_API = {
   cliente: "cliente",
@@ -27,12 +28,6 @@ const ROTULOS_STATUS = {
   cancelado: "Cancelada",
   "produto armazenado": "Produto armazenado",
 };
-
-function formatarData(valor) {
-  if (!valor) return "A definir";
-  const data = new Date(String(valor).replace(" ", "T"));
-  return Number.isNaN(data.getTime()) ? String(valor) : data.toLocaleDateString("pt-BR");
-}
 
 function converterDados(ordensApi, painel = {}) {
   const equipamentos = new Map();
@@ -64,6 +59,9 @@ function converterDados(ordensApi, painel = {}) {
       prioridade: "Média",
       status: ROTULOS_STATUS[status] || status,
       statusApi: status,
+      diagnostico: item.diagnostico || "",
+      reparo_executado: item.reparo_executado || "",
+      prazo: item.prazo?.slice(0, 10) || "",
       data: formatarData(item.prazo || item.data_manutencao || item.criado_em),
       tipo: item.servico || "Manutenção",
     };
@@ -115,7 +113,17 @@ function converterDados(ordensApi, painel = {}) {
 
 export default function DashboardClient({ secao }) {
   const router = useRouter();
+  const [revisao, setRevisao] = useState(0);
   const [estado, setEstado] = useState({ carregando: true, usuario: null, dados: null, erro: "" });
+
+  useEffect(() => {
+    const atualizarSessao = () => {
+      setEstado({ carregando: true, usuario: null, dados: null, erro: "" });
+      setRevisao((valor) => valor + 1);
+    };
+    window.addEventListener("tap-session-change", atualizarSessao);
+    return () => window.removeEventListener("tap-session-change", atualizarSessao);
+  }, []);
 
   useEffect(() => {
     let ativo = true;
@@ -154,7 +162,7 @@ export default function DashboardClient({ secao }) {
 
     carregar();
     return () => { ativo = false; };
-  }, [router]);
+  }, [router, revisao]);
 
   if (estado.carregando) {
     return <main className="auren-dashboard auren-error-screen"><div className="error-card"><h1>Carregando sua dashboard</h1><p>Validando seu acesso e buscando os dados da conta.</p></div></main>;
@@ -168,5 +176,5 @@ export default function DashboardClient({ secao }) {
     return <main className="auren-dashboard auren-error-screen"><div className="error-card"><h1>Seção indisponível</h1><p>Seu perfil não tem permissão para acessar esta seção.</p><a href="/dashboard">Ir para visão geral</a></div></main>;
   }
 
-  return <AurenDashboard usuario={estado.usuario} dados={estado.dados} secao={secao} demonstracao={false} onLogout={() => { setSession(null); router.replace("/login"); }} />;
+  return <AurenDashboard key={`${estado.usuario.tipo}:${estado.usuario.id}`} usuario={estado.usuario} dados={estado.dados} secao={secao} demonstracao={false} onLogout={() => { setSession(null); router.replace("/login"); }} />;
 }

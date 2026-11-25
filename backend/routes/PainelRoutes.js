@@ -1,3 +1,5 @@
+import { equipeRestrita } from "../utils/permissoes.js";
+import { id as validarId } from "../utils/validacao.js";
 import { Router } from "express";
 import { pool } from "../config/database.js";
 import { autenticar } from "../middlewares/AuthMiddleware.js";
@@ -8,12 +10,8 @@ painelRouter.use(autenticar);
 
 const falha = (status, mensagem) => Object.assign(new Error(mensagem), { status });
 const admin = (u) => u.tipo === "equipe" && ["adm", "desenvolvedor"].includes(u.perfil);
-const tecnico = (u) => u.tipo === "equipe" && u.perfil === "funcionario";
-const inteiro = (v) => {
-  const n = Number(v);
-  if (!Number.isSafeInteger(n) || n < 1) throw falha(422, "Identificador inválido.");
-  return n;
-};
+const tecnico = equipeRestrita;
+const inteiro = validarId;
 const texto = (v, nome, limite = 200, minimo = 1) => {
   if (typeof v !== "string" || v.trim().length < minimo || v.trim().length > limite) {
     throw falha(422, nome + ": informe de " + minimo + " a " + limite + " caracteres.");

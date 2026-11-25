@@ -21,5 +21,8 @@ export function carregarAmbiente(arquivo = ".env") {
   const porta = Number(process.env.PORT || 3001);
   if (!Number.isInteger(porta) || porta < 1 || porta > 65535)
     throw new Error("PORT inválida.");
+  const portaBanco = Number(process.env.DB_PORT);
+  if (!Number.isInteger(portaBanco) || portaBanco < 1 || portaBanco > 65535)
+    throw new Error("DB_PORT inválida.");
   return { porta, ambiente: process.env.NODE_ENV || "development" };
 }

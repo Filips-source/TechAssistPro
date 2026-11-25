@@ -1,3 +1,4 @@
+import { validarSenha as senhaForte } from "../utils/senha.js";
 import bcrypt from "bcryptjs";
 import { pool } from "../config/database.js";
 import * as AuthService from "./AuthService.js";
@@ -5,15 +6,6 @@ import { erro, texto, email, telefone, opcao, id as validarId } from "../utils/v
 
 function tipoValido(tipo) {
   return opcao(tipo, ["cliente", "funcionario"], "Tipo de usuário");
-}
-
-function senhaForte(senha) {
-  if (typeof senha !== "string" || senha.length < 8 || senha.length > 72 ||
-      !/[a-z]/.test(senha) || !/[A-Z]/.test(senha) ||
-      !/[0-9]/.test(senha) || !/[\W_]/.test(senha)) {
-    throw erro(422, "A senha deve ter de 8 a 72 caracteres com maiúscula, minúscula, número e símbolo.");
-  }
-  return senha;
 }
 
 function dadosCliente(dados) {
