@@ -9,8 +9,13 @@ export function getSession() {
   }
 }
 export function setSession(value) {
+  const anterior = getSession();
   if (value) sessionStorage.setItem("tap-session", JSON.stringify(value));
   else sessionStorage.removeItem("tap-session");
+  if (anterior?.token !== value?.token) {
+    sessionStorage.removeItem("tap-tracking");
+    if (typeof window !== "undefined") window.dispatchEvent(new Event("tap-session-change"));
+  }
 }
 export function getTracking() {
   try {
@@ -25,7 +30,7 @@ export function setTracking(order) {
     JSON.stringify({ id: order.id, email: order.email }),
   );
 }
-export async function api(path, { method = "GET", body } = {}) {
+export async function api(path, { method = "GET", body, signal } = {}) {
   const base = process.env.NEXT_PUBLIC_API_URL || "/api";
   const sessao = getSession();
   const isFormData = typeof FormData !== "undefined" && body instanceof FormData;
@@ -38,13 +43,21 @@ export async function api(path, { method = "GET", body } = {}) {
         ...(sessao?.token ? { Authorization: "Bearer " + sessao.token } : {}),
       },
       body: body === undefined ? undefined : isFormData ? body : JSON.stringify(body),
-      signal: AbortSignal.timeout(15000),
+      signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(15000)]) : AbortSignal.timeout(15000),
     });
   } catch {
     throw new Error(
       "Não foi possível conectar à API. Confira se o back-end está iniciado e se o endereço está configurado.",
     );
   }
+  const conferirSessao = () => {
+    if (getSession()?.token !== sessao?.token) {
+      const erro = new Error("A sessão foi alterada. Recarregue os dados da conta atual.");
+      erro.code = "SESSION_CHANGED";
+      throw erro;
+    }
+  };
+  conferirSessao();
   if (res.status === 204) return null;
   let json;
   try {
@@ -54,6 +67,7 @@ export async function api(path, { method = "GET", body } = {}) {
       "A API retornou uma resposta inválida. Confira a configuração do servidor.",
     );
   }
+  conferirSessao();
   if (!res.ok) {
     const erro = new Error(
       json.erro || "Não foi possível concluir a operação.",

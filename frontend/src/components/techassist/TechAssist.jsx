@@ -927,6 +927,7 @@ function CTABand() {
           </h2>
         </div>
         <Primary href={route("orcamento")}>Solicitar orçamento</Primary>
+            <a href="/planos" className="button ghost">Conhecer planos</a>
       </div>
     </section>
   );
@@ -2174,7 +2175,7 @@ export default function TechAssist({ initialPage = "contato", initialAuthMode = 
     }
   }
   return (
-    <>
+    <div className="techassist-site">
       <a className="skip-link" href="#main-content">
         Pular para o conteúdo
       </a>
@@ -2264,6 +2265,7 @@ export default function TechAssist({ initialPage = "contato", initialAuthMode = 
             <small>EXPLORE</small>
             <a href={route("inicio")}>Início</a>
             <a href={route("servicos")}>Nossos serviços</a>
+            <a href="/planos">Conhecer planos</a>
             <a href={route("sobre")}>Sobre o TechAssist Pro</a>
           </div>
           <div>
@@ -2296,7 +2298,7 @@ export default function TechAssist({ initialPage = "contato", initialAuthMode = 
       </footer>
       {privacy && <Privacy onClose={() => setPrivacy(false)} />}
       {authMode && <AuthModal initialMode={authMode} onClose={() => setAuthMode(null)} onAuthenticated={autenticar} />}
-    </>
+    </div>
   );
 }
 

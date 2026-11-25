@@ -10,6 +10,8 @@
     "criar-admin": "node scripts/criar-admin.js",
     "criar-desenvolvedor": "node scripts/criar-desenvolvedor.js",
     "check": "node --check app.js",
+    "test:regressao": "node --experimental-test-module-mocks --test test/regressao.test.mjs test/sessao.test.mjs test/relatorios.test.mjs",
+    "validar-contas": "node scripts/validar-contas.mjs",
     "test:integracao": "node --test test/integracao.test.js"
   },
   "keywords": [],

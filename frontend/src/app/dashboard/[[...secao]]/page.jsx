@@ -10,9 +10,8 @@ export const metadata = { title: "Dashboard | TechAssist Pro" };
 export default async function DashboardPage({ params, searchParams }) {
   const { secao = [] } = await params;
   const tela = secao[0] ?? "visao-geral";
-  // Em desenvolvimento, os dados fictícios permitem abrir a dashboard sem API ou banco.
-  // Para testar a integração real localmente, defina AUREN_DASHBOARD_DEMO=false.
-  const demonstracao = process.env.NODE_ENV !== "production" && process.env.AUREN_DASHBOARD_DEMO !== "false";
+  // A prévia fictícia exige ativação explícita; o login local usa a conta real por padrão.
+  const demonstracao = process.env.NODE_ENV !== "production" && process.env.AUREN_DASHBOARD_DEMO === "true";
 
   if (secao.length > 1) notFound();
   if (!demonstracao) return <DashboardClient secao={tela} />;

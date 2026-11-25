@@ -1,3 +1,4 @@
+import { equipeRestrita, exigirAcessoOrdem } from "../utils/permissoes.js";
 import { randomBytes } from "node:crypto";
 import { pool, transacao } from "../config/database.js";
 import { erro } from "../utils/validacao.js";
@@ -11,7 +12,7 @@ async function historico(c, id, status, descricao) {
 export async function listar(usuario) {
   const filtrarCliente = usuario.tipo === "cliente";
   const filtrarTecnico =
-    usuario.tipo === "equipe" && usuario.perfil === "funcionario";
+    equipeRestrita(usuario);
   const [r] = await pool.query(
     consulta +
       (filtrarCliente
@@ -118,13 +119,7 @@ export async function atualizar(id, d, usuario) {
       "SELECT * FROM ordens_servico WHERE id_os=? FOR UPDATE",
       [id],
     );
-    if (!o) throw erro(404, "Ordem não encontrada.");
-    if (
-      usuario.tipo === "equipe" &&
-      usuario.perfil === "funcionario" &&
-      o.id_usuario !== usuario.id
-    )
-      throw erro(404, "Ordem não encontrada.");
+    exigirAcessoOrdem(o, usuario);
     if (["entregue", "cancelado"].includes(o.status))
       throw erro(409, "Esta ordem já está encerrada.");
     const [[orc]] = await c.query("SELECT * FROM orcamentos WHERE id_os=?", [
@@ -180,7 +175,7 @@ export async function atualizar(id, d, usuario) {
         diagnostico,
         reparo,
         d.prazo ?? o.prazo,
-        d.id_usuario ?? o.id_usuario ?? usuario.id,
+        d.id_usuario !== undefined ? d.id_usuario : o.id_usuario,
         status,
         status,
         id,
@@ -195,13 +190,13 @@ export async function atualizar(id, d, usuario) {
   });
   return buscar(id);
 }
-export async function criarOrcamento(id, d) {
+export async function criarOrcamento(id, d, usuario) {
   await transacao(async (c) => {
     const [[o]] = await c.query(
       "SELECT * FROM ordens_servico WHERE id_os=? FOR UPDATE",
       [id],
     );
-    if (!o) throw erro(404, "Ordem não encontrada.");
+    exigirAcessoOrdem(o, usuario);
     if (
       !["em diagnostico", "aguardando aprovacao", "aguardando peca"].includes(
         o.status,

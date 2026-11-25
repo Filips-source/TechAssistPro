@@ -447,6 +447,7 @@ const tableFields = {
   contatos: ["nome", "email", "assunto", "mensagem"],
 };
 function AdminPanel({ user }) {
+  const podeGerenciarCadastros = ["adm", "desenvolvedor"].includes(user.perfil);
   const [tab, setTab] = useState("ordens"),
     [rows, setRows] = useState([]),
     [filter, setFilter] = useState(""),
@@ -642,6 +643,7 @@ function AdminPanel({ user }) {
           <OrderEditor
             order={detail}
             options={options}
+            podeAtribuir={podeGerenciarCadastros}
             onSaved={(o) => {
               setDetail(o);
               setSuccess("Ordem atualizada.");
@@ -661,7 +663,7 @@ function AdminPanel({ user }) {
               />
             </label>
             <span>{rows.length} registros · até 200 por lista</span>
-            {tab !== "contatos" && (
+            {tab !== "contatos" && podeGerenciarCadastros && (
               <Primary onClick={() => openForm()}>
                 {tab === "ordens" ? "Abrir ordem" : "Novo cadastro"}
               </Primary>
@@ -829,6 +831,7 @@ function AdminPanel({ user }) {
                           <div className="table-actions">
                             <button
                               className="text-link"
+                              disabled={tab !== "ordens" && !podeGerenciarCadastros}
                               onClick={() =>
                                 tab === "ordens"
                                   ? openOrder(row)
@@ -838,7 +841,7 @@ function AdminPanel({ user }) {
                               {tab === "ordens" ? "Gerenciar" : "Editar"}{" "}
                               <Icon size={13} />
                             </button>
-                            {user.perfil === "adm" && tab !== "ordens" && (
+                            {podeGerenciarCadastros && tab !== "ordens" && (
                               <button
                                 className="icon-button"
                                 aria-label={"Excluir " + row.nome}
@@ -889,7 +892,7 @@ function AdminPanel({ user }) {
     </div>
   );
 }
-function OrderEditor({ order, options, onSaved }) {
+function OrderEditor({ order, options, onSaved, podeAtribuir = false }) {
   const [error, setError] = useState(""),
     [busy, setBusy] = useState(false),
     [success, setSuccess] = useState(""),
@@ -911,6 +914,7 @@ function OrderEditor({ order, options, onSaved }) {
     const d = Object.fromEntries(new FormData(e.currentTarget));
     for (const k of ["diagnostico", "reparo_executado", "prazo", "id_usuario"])
       if (!d[k]) delete d[k];
+    if (!podeAtribuir) delete d.id_usuario;
     try {
       onSaved(
         await api("/ordens/" + order.id_os, { method: "PATCH", body: d }),
@@ -991,7 +995,7 @@ function OrderEditor({ order, options, onSaved }) {
                 </select>
               </Field>
               <Field label="Técnico responsável">
-                <select name="id_usuario" defaultValue={order.id_usuario || ""}>
+                <select name="id_usuario" defaultValue={order.id_usuario || ""} disabled={!podeAtribuir}>
                   <option value="">Manter responsável</option>
                   {options.tecnicos.map((t) => (
                     <option key={t.id_usuario} value={t.id_usuario}>

@@ -3,7 +3,7 @@ export function controlador(tipo) {
   return {
     listar: async (req, res, next) => {
       try {
-        res.json({ sucesso: true, dados: await Service.listar(tipo) });
+        res.json({ sucesso: true, dados: await Service.listar(tipo, req.usuario) });
       } catch (e) {
         next(e);
       }

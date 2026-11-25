@@ -373,6 +373,28 @@
 
 
 /* Gestão de usuários — extensão do modal existente, sem alterar o layout da dashboard */
+.ad-toolbar { flex-wrap:wrap; }
+.ad-search { min-width:0; flex:1 1 220px; }
+.ad-search input,.support-composer textarea { min-width:0; }
+.ad-modal :is(input,select,textarea),.ad-users-password { min-width:0; max-width:100%; }
+.ad-profile-card,.ad-feedback,.support-contact-bottom { overflow-wrap:anywhere; }
+.ad-modal-backdrop { overflow-y:auto; }
+.ad-modal { max-height:calc(100dvh - 40px); }
+.auren-dashboard :is(button,a,input,select,textarea):focus-visible { outline:2px solid #ffb2aa; outline-offset:3px; }
+@media(max-width:510px) {
+  .ad-topbar { min-height:65px; height:auto; padding-top:10px; padding-bottom:10px; gap:8px; }
+  .ad-top-left,.ad-breadcrumb { min-width:0; }
+  .ad-breadcrumb strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .ad-top-avatar,.ad-top-separator { display:none; }
+  .ad-top-right { flex-shrink:0; gap:6px; }
+  .ad-role-tag { max-width:92px; overflow:hidden; text-overflow:ellipsis; }
+  .ad-modal-backdrop { padding:12px; }
+  .ad-modal { padding:18px; max-height:calc(100dvh - 24px); }
+  .ad-form-footer { flex-wrap:wrap; }
+  .ad-form-footer button { flex:1; min-height:44px; }
+  .support-composer textarea,.ad-form :is(input,select,textarea),.support-new-form :is(input,select,textarea) { font-size:16px; }
+  .support-filters button,.ad-mobile-trigger,.ad-logout-btn { min-height:44px; }
+}
 .ad-users-heading { gap:16px; }
 .ad-users-actions { display:flex; gap:9px; flex-wrap:wrap; justify-content:flex-end; }
 .ad-users-modal { width:min(740px,100%); max-height:min(90vh,850px); overflow-y:auto; }
@@ -407,4 +429,39 @@
   .ad-users-toolbar input { flex-basis:100%; }
   .ad-users-item { flex-direction:column; align-items:flex-start; }
   .ad-users-item-actions { width:100%; }
+}
+
+
+/* Gestão operacional: ferramentas, peças, equipamentos, métricas e relatórios. */
+.ad-operational { margin-bottom:24px; }
+.ad-operational-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(255px,1fr)); gap:16px; margin-top:16px; }
+.ad-operational-item { padding:20px; display:flex; flex-direction:column; gap:12px; min-height:180px; }
+.ad-operational-item > div:first-child { display:flex; flex-direction:column; gap:6px; }
+.ad-operational-item > div:first-child strong { color:#f8fafc; font-size:15px; line-height:1.5; }
+.ad-operational-item small { color:#bfc8d3; font-size:12px; }
+.ad-operational-item p { color:#d3d9e2; font-size:13px; line-height:1.65; overflow-wrap:anywhere; }
+.ad-operation-actions { display:flex; gap:10px; flex-wrap:wrap; margin-top:auto; }
+.ad-operation-actions button { min-width:95px; }
+.ad-danger-btn { background:#442426; color:#ffd5d5; border:1px solid #914248; padding:9px 14px; border-radius:8px; cursor:pointer; }
+.ad-danger-btn:hover { background:#6e2b33; }
+.ad-operation-error,.ad-operation-success { padding:13px 15px; border-radius:9px; margin:12px 0; line-height:1.5; font-size:13px; }
+.ad-operation-error { background:#431f29; border:1px solid #8b364c; color:#ffd3dd; }
+.ad-operation-success { background:#203b34; border:1px solid #3f8568; color:#d1f6e7; }
+.ad-report-complete { padding:16px; background:#131920; border:1px solid #3c4551; border-radius:10px; white-space:pre-wrap; }
+.ad-operational .ad-toolbar { margin:15px 0; }
+.ad-operational .ad-form textarea { min-height:85px; }
+.ad-operational .ad-modal { width:min(610px,100%); }
+@media(max-width:650px){.ad-operational-grid{grid-template-columns:1fr}.ad-operational .ad-section-title{align-items:flex-start;flex-direction:column;gap:12px}}
+
+/* Relatórios técnicos integrados a ordens de serviço. */
+.ad-technical-reports { margin-bottom: 32px; }
+.ad-technical-reports > .ad-secondary-btn { align-self: flex-start; }
+.ad-technical-reports .ad-operational-item > small { color: var(--muted); }
+.ad-technical-reports details { overflow-wrap: anywhere; }
+.ad-technical-reports summary { cursor: pointer; padding: 8px 0; }
+.ad-technical-reports .ad-modal { max-height: 90dvh; overflow-y: auto; }
+.ad-technical-reports textarea { width: 100%; min-width: 0; resize: vertical; }
+@media (max-width: 600px) {
+  .ad-technical-reports .ad-section-title { flex-direction: column; align-items: stretch; }
+  .ad-technical-reports .ad-modal { padding: 20px; }
 }

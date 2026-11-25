@@ -1,3 +1,4 @@
+import { validarSenha } from "../utils/senha.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import * as UsuarioModel from "../models/UsuarioModel.js";
@@ -14,20 +15,7 @@ export async function registrar(dados = {}, imagemUrl = null) {
     ? texto(dados.nome_razao_social, "Razão social", 2, 160)
     : nome;
   const endereco = dados.endereco ? texto(dados.endereco, "Endereço", 1, 300) : null;
-  const senha = dados.senha;
-  if (
-    typeof senha !== "string" ||
-    senha.length < 8 ||
-    senha.length > 72 ||
-    !/[a-z]/.test(senha) ||
-    !/[A-Z]/.test(senha) ||
-    !/[0-9]/.test(senha) ||
-    !/[\W_]/.test(senha)
-  )
-    throw erro(
-      422,
-      "Senha de 8 a 72 caracteres, com maiúscula, minúscula, número e símbolo.",
-    );
+  const senha = validarSenha(dados.senha);
   if (await UsuarioModel.buscarPorEmail(mail))
     throw erro(409, "E-mail já cadastrado. Faça login para continuar.");
   try {
@@ -70,7 +58,7 @@ export async function login(dados = {}) {
       ["cliente", "equipe"],
       "Tipo de acesso",
     );
-  const senha = texto(dados.senha, "Senha", 1, 72);
+  const senha = validarSenha(dados.senha, { forte: false });
   const u = await UsuarioModel.buscarPorEmail(mail, tipo);
   if (
     !u ||

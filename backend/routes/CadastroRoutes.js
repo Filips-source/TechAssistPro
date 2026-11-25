@@ -10,8 +10,8 @@ export function criarRotasCadastro(tipo) {
     c = controlador(tipo);
   r.use(autenticar, autorizarEquipe);
   r.get("/", c.listar);
-  r.post("/", c.criar);
-  r.put("/:id", c.atualizar);
+  r.post("/", autorizarAdmin, c.criar);
+  r.put("/:id", autorizarAdmin, c.atualizar);
   r.delete("/:id", autorizarAdmin, c.excluir);
   return r;
 }
