@@ -1,39 +1,62 @@
 # Revisão consolidada — 25/11/2026
 
-Esta versão reúne os módulos da PR #2 com as correções da revisão de 25/11. Os módulos que não estavam na `main` de 19/11 já existiam na branch desta PR e foram preservados: gestão operacional de equipamentos, peças, ferramentas, relatórios, métricas/leituras e página demonstrativa de planos.
+Reúne os módulos operacionais da PR #2, as correções de sessão/chat/permissões, o módulo de relatórios técnicos do Drive e os ajustes de legibilidade do CSS fornecido pelo usuário. Arquivos Docker e conta administrativa existente preservados.
+
+## Comparação e escolha das versões
+
+| Parte | Decisão |
+| --- | --- |
+| Dashboard, autenticação e chat | Manter a base consolidada do GitHub: possui gestão real de usuários, upload de foto, AuthModal e CRUD operacional. O Drive não inclui parte desses recursos e ainda usa demonstração local para funcionários. |
+| Relatórios técnicos por OS | Aproveitar arquitetura, campos e tabela `relatorios` do Drive, corrigindo referência ausente ao serviço de edição e completando listagem, consulta, autorização e interface. |
+| Relatórios operacionais | Preservar `painel_relatorios` (título/tipo/conteúdo) separadamente do relatório técnico de diagnóstico/reparo por OS. |
+| CSS público | Incorporar os ajustes enviados por texto para rótulos da revisão e ícone de sucesso. Complementar fontes de textos, links e botões públicos, preservando menu/login. Usar escopo `.techassist-site` para não aumentar fontes do dashboard. Ajustar fundo da revisão para contraste com texto branco. |
 
 ## Antes de implantar no Coolify
 
-Aplicar a migração aditiva `database/migrations/2026-11-23-dashboard-operacional.sql` ao banco correto, após backup. Ela cria as quatro tabelas `painel_*` e exemplos de ferramentas/relatórios. Sem essas tabelas, `/api/painel/resumo` falha e o dashboard não carrega. Não executar o SQL de recriação do banco sobre dados reais.
+Após backup, aplicar no banco correto, nesta ordem:
 
-Os arquivos do Docker e as configurações de produção permanecem inalterados. Esta solicitação não realiza merge nem deploy automaticamente.
+1. `database/migrations/2026-11-23-dashboard-operacional.sql` — quatro tabelas `painel_*` e exemplos. Sem elas, o resumo e o dashboard falham.
+2. `database/migrations/2026-11-25-relatorios-tecnicos.sql` — tabela `relatorios`, compatível com a definição do Drive; preserva tabela e registros existentes.
 
-## Correções incorporadas
+Não executar o SQL de recriação do banco em produção. A tabela também foi acrescentada a `database/techassistpro.sql` para instalações novas e testes. Se a tabela existente divergir da definição do Drive, conferir sua estrutura antes de implantar.
 
-- Chat identifica autoria pelo tipo e ID do remetente, inclusive entre administradores distintos; conserva a demonstração com IDs compatíveis com os usuários de exemplo.
-- Troca de conta remonta o chat, limpa o rastreio e rejeita respostas atrasadas da sessão anterior. Corrigidos clique na conversa já selecionada e espera de reconexão.
-- Orçamentos de OS alheias são bloqueados antes de alterações de estoque, dentro da transação.
-- Funcionário não pode trocar responsável da OS; administrador pode remover atribuição explicitamente com `null`.
-- Listagens e resumo operacional limitam funcionários e perfis legados restritos às suas atribuições. Criação/edição de cadastros administrativos é reservada a administrador/desenvolvedor; as rotas do painel preservam o cadastro/edição de equipamento pelo cliente proprietário.
-- Dashboard usa a API real por padrão, preserva os módulos operacionais e inclui diagnóstico, reparo executado, descrição e prazo na atualização da OS.
-- Prazos sem horário não retrocedem um dia no fuso brasileiro. Canceladas não aparecem como próximos serviços.
-- Senhas preservam espaços e respeitam o limite de bytes do bcrypt. IDs e porta MySQL recebem validação adicional.
-- Ajustes de CSS em busca, chat, modais e navegação móvel.
+Se o Coolify fizer deploy automático ao atualizar a main, aplicar as migrações antes do merge. Esta revisão não executou migrações, merge ou deploy.
 
-## Validação realizada
+## Relatórios técnicos
 
-- `npm run test:regressao`: **20 testes aprovados**, com operações SQL simuladas.
-- `npm run check`: aprovado.
-- `node --check` nos 36 arquivos JS/MJS do back-end: aprovado.
-- Conflitos resolvidos e `git diff --check` aprovado.
+- API autenticada: `GET /api/relatorios`, `GET /api/relatorios/:id`, `POST /api/relatorios` e `PATCH /api/relatorios/:id`.
+- Diagnóstico, descrição do reparo, observações e vínculo com OS; autor obtido da sessão, sem confiar no ID enviado pelo cliente.
+- Administrador/desenvolvedor acessa os relatórios da equipe. Funcionário e perfis legados restritos acessam somente relatórios próprios em OS atualmente atribuídas a eles. Cliente não acessa relatórios internos.
+- Gravações verificam autorização dentro de transação com bloqueio de linha. PATCH preserva campos omitidos e não troca autor/OS; salvar valores iguais é sucesso.
+- A seção Relatórios permite adicionar, ler e editar relatórios técnicos. Os modelos operacionais permanecem disponíveis à administração. Não foi acrescentada exclusão de histórico técnico.
 
-Esses resultados não são testes E2E. Build do Next.js, MySQL real, login das três contas, persistência, SSE e responsividade visual continuam sem confirmação neste ambiente, que apresentou bloqueio de rede para instalação de dependências. Executar a suíte de integração com banco exclusivo `_test`, o build e os testes de navegador antes de considerar a versão validada para produção.
+## Correções preservadas e complementares
 
-## Contas
+- Chat identifica autoria pelo tipo e ID; troca de conta limpa dados anteriores e rejeita respostas atrasadas. Corrigidos clique na conversa selecionada e reconexão.
+- Orçamento alheio é bloqueado antes de alterar estoque. Funcionário não troca responsável da OS; administrador pode remover atribuição com null.
+- Cadastros administrativos exigem administrador/desenvolvedor; listagens restritas filtram por atribuição e clientes gerenciam somente seus equipamentos.
+- Dashboard usa API real por padrão, atualiza status/diagnóstico/reparo/prazo e recarrega dados após alterar equipamentos, métricas e estoque.
+- Corrigida mistura de operadores `||` e `??` sem parênteses em GestorOperacional, que impediria a compilação.
+- Datas sem horário não retrocedem um dia; canceladas não aparecem como próximos serviços.
+- Senhas preservam espaços e respeitam limite de bytes do bcrypt. Validações adicionais de ID e porta MySQL.
+- Ajustes móveis de busca, chat, modais, relatórios e tipografia pública. Planos continuam demonstrativos, sem cobrança ou assinatura real.
 
-O administrador existente `adminAuren@gmail.com` não foi recriado nem teve sua senha alterada. Nenhuma conta real foi criada durante a revisão.
+## Validação e limites
 
-O script `backend/scripts/validar-contas.mjs` autentica o administrador existente e verifica/cria somente as contas de teste de funcionário e cliente. Informe `TEST_API_URL` (incluindo `/api`) e `TEST_ADMIN_SENHA` em ambiente local. Para contas já existentes, informe os e-mails/senhas em `TEST_FUNCIONARIO_*` e `TEST_CLIENTE_*`; nenhuma senha existente é redefinida.
+- `npm run test:regressao`: **34 testes aprovados**, incluindo 14 de relatórios, com SQL simulado.
+- `npm run check` e verificação de sintaxe de todos os arquivos JS/MJS do backend: aprovados.
+- Análise sintática e transformação JSX com TypeScript 6.0.3 do ambiente: **29 arquivos do frontend sem erros**; não equivale ao build Next.js.
+- `git diff --check`: aprovado. Arquivos Docker comparados sem alteração.
+
+A instalação de dependências foi bloqueada por falha de rede. Build Next.js, MySQL real, login das três contas, persistência, SSE e responsividade visual não foram confirmados. Antes da produção, executar build, suíte de integração em banco exclusivo `_test` e testes de navegador com cliente, funcionário e administrador.
+
+Conferir: envio/resposta no chat, logout/troca de conta, bloqueio de relatórios alheios, criação/edição de relatório próprio, gestão administrativa, equipamento/métrica aparecendo no monitoramento e layout em celular/tablet/desktop.
+
+## Contas de teste
+
+O administrador `adminAuren@gmail.com` não foi recriado nem teve a senha alterada. Nenhuma conta real foi criada nesta revisão.
+
+`backend/scripts/validar-contas.mjs` autentica o administrador existente e verifica/cria somente cliente e funcionário de teste. Informar `TEST_API_URL` (com `/api`) e `TEST_ADMIN_SENHA` em ambiente local. Para contas existentes, usar `TEST_FUNCIONARIO_*` e `TEST_CLIENTE_*`; senhas existentes não são redefinidas.
 
 ```text
 cd backend
@@ -41,6 +64,4 @@ npm run validar-contas
 npm run validar-contas -- --fluxos
 ```
 
-O modo `--fluxos` grava e mantém registros identificados de OS/chat para verificar acesso, atribuição, atualização e SSE. Não substitui a conferência visual de login, logout, troca de conta e layout.
-
-Os relatórios `painel_relatorios` desta PR são relatórios operacionais de título/tipo/conteúdo. Não equivalem ao módulo técnico separado de relatórios vinculados a OS descrito no histórico; esse módulo não foi substituído ou inventado nesta consolidação. A página `/planos` continua apenas demonstrativa, sem cobrança ou assinatura real.
+O modo `--fluxos` grava e mantém registros identificados de OS/chat para verificar acesso, atribuição, atualização e SSE. Não substitui testes visuais nem a conferência dos relatórios técnicos.

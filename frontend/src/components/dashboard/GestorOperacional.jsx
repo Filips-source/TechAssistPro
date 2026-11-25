@@ -135,7 +135,7 @@ export default function GestorOperacional({ tipo, usuario, onDadosAlterados }) {
         : <section className="ad-operational-grid">
           {filtrados.map((registro) => <article key={registro[conf.id]} className="ad-panel ad-operational-item">
             <div><strong>{tituloRegistro(registro)}</strong><small>{tipo === "ferramentas" ? (registro.categoria + " · " + (legenda[registro.estado] ?? registro.estado)) : tipo === "relatorios" ? (legenda[registro.tipo] ?? registro.tipo) : tipo === "pecas" ? ("Qtd.: " + registro.quantidade + " · R$ " + registro.valor) : tipo === "equipamentos" ? (registro.marca + " · " + registro.modelo) : ("Equipamento #" + registro.id_equipamento + " · " + registro.unidade)}</small></div>
-            <p>{formatar(registro.descricao || registro.conteudo || registro.observacoes ?? (tipo === "metricas" ? ("Atenção: " + registro.limite_atencao + " / Crítico: " + registro.limite_critico) : ("Quantidade: " + registro.quantidade)))}</p>
+            <p>{formatar((registro.descricao || registro.conteudo || registro.observacoes) ?? (tipo === "metricas" ? ("Atenção: " + registro.limite_atencao + " / Crítico: " + registro.limite_critico) : ("Quantidade: " + registro.quantidade)))}</p>
             {podeEditar && <div className="ad-operation-actions">
               <button type="button" className="ad-secondary-btn" onClick={() => abrir(registro)}>Editar</button>
               {administrador && <button type="button" className="ad-danger-btn" disabled={salvando} onClick={() => excluir(registro)}>Excluir</button>}

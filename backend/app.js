@@ -10,6 +10,7 @@ import { gestaoUsuariosRouter } from "./routes/GestaoUsuariosRoutes.js";
 import { contatoRouter } from "./routes/ContatoRoutes.js";
 import { suporteRouter } from "./routes/SuporteRoutes.js";
 import { painelRouter } from "./routes/PainelRoutes.js";
+import { relatorioRouter } from "./routes/RelatorioRoutes.js";
 import { ordemRouter } from "./routes/OrdemRoutes.js";
 import { criarRotasCadastro } from "./routes/CadastroRoutes.js";
 import * as Ordem from "./controllers/OrdemController.js";
@@ -48,6 +49,7 @@ app.use("/api/gestao-usuarios", gestaoUsuariosRouter);
 app.use("/api/contatos", contatoRouter);
 app.use("/api/suporte", suporteRouter);
 app.use("/api/painel", painelRouter);
+app.use("/api/relatorios", relatorioRouter);
 app.use("/api/ordens", ordemRouter);
 for (const tipo of ["clientes", "equipamentos", "pecas"])
   app.use("/api/" + tipo, criarRotasCadastro(tipo));

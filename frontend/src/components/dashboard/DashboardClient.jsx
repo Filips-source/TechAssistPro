@@ -176,5 +176,5 @@ export default function DashboardClient({ secao }) {
     return <main className="auren-dashboard auren-error-screen"><div className="error-card"><h1>Seção indisponível</h1><p>Seu perfil não tem permissão para acessar esta seção.</p><a href="/dashboard">Ir para visão geral</a></div></main>;
   }
 
-  return <AurenDashboard key={`${estado.usuario.tipo}:${estado.usuario.id}`} usuario={estado.usuario} dados={estado.dados} secao={secao} demonstracao={false} onLogout={() => { setSession(null); router.replace("/login"); }} />;
+  return <AurenDashboard key={`${estado.usuario.tipo}:${estado.usuario.id}`} usuario={estado.usuario} dados={estado.dados} secao={secao} demonstracao={false} onDadosAlterados={() => { setEstado((atual) => ({ ...atual, carregando: true })); setRevisao((valor) => valor + 1); }} onLogout={() => { setSession(null); router.replace("/login"); }} />;
 }

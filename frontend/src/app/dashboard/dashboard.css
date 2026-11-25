@@ -452,3 +452,16 @@
 .ad-operational .ad-form textarea { min-height:85px; }
 .ad-operational .ad-modal { width:min(610px,100%); }
 @media(max-width:650px){.ad-operational-grid{grid-template-columns:1fr}.ad-operational .ad-section-title{align-items:flex-start;flex-direction:column;gap:12px}}
+
+/* Relatórios técnicos integrados a ordens de serviço. */
+.ad-technical-reports { margin-bottom: 32px; }
+.ad-technical-reports > .ad-secondary-btn { align-self: flex-start; }
+.ad-technical-reports .ad-operational-item > small { color: var(--muted); }
+.ad-technical-reports details { overflow-wrap: anywhere; }
+.ad-technical-reports summary { cursor: pointer; padding: 8px 0; }
+.ad-technical-reports .ad-modal { max-height: 90dvh; overflow-y: auto; }
+.ad-technical-reports textarea { width: 100%; min-width: 0; resize: vertical; }
+@media (max-width: 600px) {
+  .ad-technical-reports .ad-section-title { flex-direction: column; align-items: stretch; }
+  .ad-technical-reports .ad-modal { padding: 20px; }
+}

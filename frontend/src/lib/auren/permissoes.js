@@ -17,7 +17,7 @@ export const PERMISSOES = Object.freeze({
     "dashboard:visualizar", "equipamentos:atribuidos:ler", "pecas:atribuidas:ler",
     "metricas:atribuidas:ler", "metricas:atribuidas:atualizar",
     "manutencoes:atribuidas:ler", "manutencoes:atribuidas:atualizar",
-    "agenda:propria:ler", "historico:proprio:ler", "perfil:editar",
+    "agenda:propria:ler", "historico:proprio:ler", "relatorios:tecnicos:gerenciar", "perfil:editar",
   ],
   administrador: [
     "dashboard:visualizar", "equipamentos:todos:ler", "equipamentos:gerenciar",
@@ -44,7 +44,7 @@ export const MENU = [
   { secao: "funcionarios", rotulo: "Funcionários", icone: "users", permissao: "funcionarios:gerenciar" },
   { secao: "pecas", rotulo: "Peças / Estoque", icone: "cpu", permissao: "ferramentas:gerenciar" },
   { secao: "ferramentas", rotulo: "Ferramentas", icone: "tool", permissao: "ferramentas:gerenciar" },
-  { secao: "relatorios", rotulo: "Relatórios", icone: "chart", permissao: "relatorios:visualizar" },
+  { secao: "relatorios", rotulo: "Relatórios", icone: "chart", permissoes: ["relatorios:visualizar", "relatorios:tecnicos:gerenciar"] },
   { secao: "auditoria", rotulo: "Auditoria", icone: "shield", apenas: ["desenvolvedor"] },
   { secao: "integracoes", rotulo: "Integrações", icone: "settings", apenas: ["desenvolvedor"] },
   { secao: "suporte", rotulo: "Suporte / Chat", icone: "message", permissoes: ["suporte:conversar", "suporte:atender"] },

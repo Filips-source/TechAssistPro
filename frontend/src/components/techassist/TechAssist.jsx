@@ -2175,7 +2175,7 @@ export default function TechAssist({ initialPage = "contato", initialAuthMode = 
     }
   }
   return (
-    <>
+    <div className="techassist-site">
       <a className="skip-link" href="#main-content">
         Pular para o conteúdo
       </a>
@@ -2298,7 +2298,7 @@ export default function TechAssist({ initialPage = "contato", initialAuthMode = 
       </footer>
       {privacy && <Privacy onClose={() => setPrivacy(false)} />}
       {authMode && <AuthModal initialMode={authMode} onClose={() => setAuthMode(null)} onAuthenticated={autenticar} />}
-    </>
+    </div>
   );
 }
 

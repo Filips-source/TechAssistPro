@@ -6,6 +6,7 @@ import { formatarData } from "../../lib/auren/datas.mjs";
 import SupportChat from "./SupportChat";
 import GestaoUsuarios from "./GestaoUsuarios";
 import GestorOperacional from "./GestorOperacional";
+import RelatoriosTecnicos from "./RelatoriosTecnicos";
 import { useMemo, useState } from "react";
 import { MENU, NOMES_PERFIS, menuDoPerfil, pode } from "../../lib/auren/permissoes";
 
@@ -87,7 +88,7 @@ function CartaoEquipamento({ equipamento, onMonitorar }) {
   return <article className="ad-equipment-card"><div className="ad-equip-head"><span className="ad-equip-icon"><Icon nome="cpu" tamanho={22}/></span><ClasseStatus valor={equipamento.status}/></div><div className="ad-equip-code">{equipamento.codigo}</div><h3>{equipamento.nome}</h3><p>{equipamento.local}</p><div className="ad-equip-health-label"><span>Saúde do equipamento</span><strong>{Number.isFinite(equipamento.saude) ? `${equipamento.saude}%` : "Sem dados"}</strong></div>{Number.isFinite(equipamento.saude) && <Nivel valor={equipamento.saude}/>}<div className="ad-equip-foot"><small>Leitura: {equipamento.ultimaLeitura}</small><button type="button" onClick={onMonitorar} className="ad-text-btn">Monitorar <Icon nome="chevron" tamanho={14}/></button></div></article>;
 }
 
-export default function AurenDashboard({ usuario, dados, secao, demonstracao, onLogout }) {
+export default function AurenDashboard({ usuario, dados, secao, demonstracao, onLogout, onDadosAlterados }) {
   const [ordens, setOrdens] = useState(dados.ordens ?? []);
   const [equipamentos, setEquipamentos] = useState(dados.equipamentos ?? []);
   const [equipamentoLeituraId, setEquipamentoLeituraId] = useState((dados.equipamentos ?? [])[0]?.id ?? null);
@@ -232,7 +233,7 @@ export default function AurenDashboard({ usuario, dados, secao, demonstracao, on
   };
   const secaoOperacional = (tipo) => demonstracao
     ? <div className="ad-demo-banner">Gerenciamento completo requer conexão com o MySQL. Desative o modo demonstração para testar alterações persistentes.</div>
-    : <GestorOperacional key={tipo + revisao} tipo={tipo} usuario={usuario} onDadosAlterados={() => setRevisao((n) => n + 1)} />;
+    : <GestorOperacional key={tipo + revisao} tipo={tipo} usuario={usuario} onDadosAlterados={() => { if (onDadosAlterados) onDadosAlterados(); else setRevisao((n) => n + 1); }} />;
 
   const cards = papel === "cliente" ? [
     ["Meus equipamentos", equipamentos.length, "cpu", "Cadastrados na TechAssist"],
@@ -276,7 +277,7 @@ export default function AurenDashboard({ usuario, dados, secao, demonstracao, on
   } else if (secao === "ferramentas") {
     conteudo = secaoOperacional("ferramentas");
   } else if (secao === "relatorios") {
-    conteudo = <>{secaoOperacional("relatorios") }<SecaoTitulo titulo="Relatórios operacionais" subtitulo="Indicadores para tomada de decisão e planejamento preventivo"/><div className="ad-kpi-grid ad-report-kpis">{cards.map(([rotulo, valor, icone, detalhe]) => <article key={rotulo} className="ad-kpi"><div className="ad-kpi-top"><span>{rotulo}</span><span className="ad-kpi-icon"><Icon nome={icone} tamanho={18}/></span></div><strong>{valor}</strong><small>{detalhe}</small></article>)}</div><section className="ad-panel ad-orders-section"><h3>Saúde dos equipamentos</h3><div className="ad-report-bars">{equipamentos.map((item) => <div className="ad-report-row" key={item.id}><span>{item.nome}</span>{Number.isFinite(item.saude) ? <><Nivel valor={item.saude}/><strong>{item.saude}%</strong></> : <><span className="ad-muted">Telemetria indisponível</span><strong>—</strong></>}</div>)}</div></section></>;
+    conteudo = <>{!demonstracao && <RelatoriosTecnicos ordens={ordens}/>} {pode(papel, "relatorios:visualizar") && secaoOperacional("relatorios")}<SecaoTitulo titulo="Relatórios operacionais" subtitulo="Indicadores para tomada de decisão e planejamento preventivo"/><div className="ad-kpi-grid ad-report-kpis">{cards.map(([rotulo, valor, icone, detalhe]) => <article key={rotulo} className="ad-kpi"><div className="ad-kpi-top"><span>{rotulo}</span><span className="ad-kpi-icon"><Icon nome={icone} tamanho={18}/></span></div><strong>{valor}</strong><small>{detalhe}</small></article>)}</div><section className="ad-panel ad-orders-section"><h3>Saúde dos equipamentos</h3><div className="ad-report-bars">{equipamentos.map((item) => <div className="ad-report-row" key={item.id}><span>{item.nome}</span>{Number.isFinite(item.saude) ? <><Nivel valor={item.saude}/><strong>{item.saude}%</strong></> : <><span className="ad-muted">Telemetria indisponível</span><strong>—</strong></>}</div>)}</div></section></>;
   } else if (secao === "auditoria") {
     conteudo = <><SecaoTitulo titulo="Trilha de auditoria" subtitulo="Eventos administrativos e técnicos para rastreabilidade"/><section className="ad-panel ad-table-panel"><div className="ad-table-wrap"><table className="ad-table"><thead><tr><th>Evento</th><th>Usuário / origem</th><th>Módulo</th><th>Data</th></tr></thead><tbody>{(dados.auditoria ?? []).map((evento) => <tr key={evento.id}><td><strong>{evento.acao}</strong></td><td>{evento.usuario}</td><td>{evento.modulo}</td><td>{evento.quando}</td></tr>)}</tbody></table></div></section></>;
   } else if (secao === "integracoes") {
